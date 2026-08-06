@@ -60,7 +60,7 @@ class DineInOrderScreen extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   TranslatedText(
-                                    "Welcome to Foodie Restaurant",
+                                    "Welcome to Tangzo Restaurant",
                                     style: TextStyle(color: AppThemeData.grey50, fontSize: 12, fontFamily: AppThemeData.regular),
                                   ),
                                   TranslatedText(

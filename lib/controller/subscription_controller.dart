@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:restaurant/app/dash_board_screens/app_not_access_screen.dart';
 import 'package:restaurant/app/dash_board_screens/dash_board_screen.dart';
 import 'package:restaurant/constant/collection_name.dart';
+import 'package:restaurant/config/cashfree_credentials.dart';
 import 'package:restaurant/controller/cashfree_service_controller.dart';
 import 'package:restaurant/controller/dash_board_controller.dart';
 import 'package:restaurant/controller/instamojo_service_controller.dart';
@@ -153,25 +154,37 @@ class SubscriptionController extends GetxController {
         instamojoModel.value = Instamojo.fromJson(jsonDecode(Preferences.getString(Preferences.instamojoSettings)));
         foloosiModel.value = Foloosi.fromJson(jsonDecode(Preferences.getString(Preferences.foloosiSettings)));
         payMongoModel.value = PayMongo.fromJson(jsonDecode(Preferences.getString(Preferences.payMongoSettings)));
-        cashfreeModel.value = Cashfree.fromJson(jsonDecode(Preferences.getString(Preferences.cashFreeSettings)));
+        final cashFreePref = Preferences.getString(Preferences.cashFreeSettings);
+        if (cashFreePref.isNotEmpty) {
+          cashfreeModel.value = Cashfree.fromJson(jsonDecode(cashFreePref));
+        }
+
+        // Force Cashfree credentials from local config — only payment gateway in use
+        cashfreeModel.value = Cashfree(
+          clientId: CashfreeCredentials.appId,
+          clientSecret: CashfreeCredentials.secretKey,
+          name: "cashfree",
+          enable: true,
+          isSandbox: CashfreeCredentials.isSandbox,
+          image: cashfreeModel.value.image,
+        );
 
         walletSettingModel.value = WalletSettingModel.fromJson(jsonDecode(Preferences.getString(Preferences.walletSettings)));
         isLoadingPayment.value = false;
-        if (stripeModel.value.isEnabled == true) {
-          Stripe.publishableKey = stripeModel.value.clientpublishableKey.toString();
-          Stripe.merchantIdentifier = 'Foodie Restaurant';
-          Stripe.instance.applySettings();
-        }
+        // if (stripeModel.value.isEnabled == true) {
+        //   Stripe.publishableKey = stripeModel.value.clientpublishableKey.toString();
+        //   Stripe.merchantIdentifier = 'Tangzo Restaurant';
+        //   Stripe.instance.applySettings();
+        // }
         setRef();
 
-        razorPay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccess);
-        razorPay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWaller);
-        razorPay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentError);
+        // razorPay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccess);
+        // razorPay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWaller);
+        // razorPay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentError);
       },
     );
-    if (walletSettingModel.value.isEnabled == true) {
-      selectedPaymentMethod.value = PaymentGateway.wallet.name;
-    }
+    // Default to Cashfree (other gateways disabled)
+    selectedPaymentMethod.value = PaymentGateway.cashfree.name;
     isLoading.value = false;
   }
 
@@ -232,7 +245,7 @@ class SubscriptionController extends GetxController {
                     primary: AppThemeData.secondary300,
                   ),
                 ),
-                merchantDisplayName: 'Foodie'));
+                merchantDisplayName: 'Tangzo'));
         displayStripePaymentSheet(amount: amount);
       }
     } catch (e, s) {
@@ -587,7 +600,7 @@ class SubscriptionController extends GetxController {
     var options = {
       'key': razorPayModel.value.razorpayKey,
       'amount': amount * 100,
-      'name': 'Foodie',
+      'name': 'Tangzo',
       'order_id': orderId,
       "currency": "INR",
       'description': 'wallet Topup',

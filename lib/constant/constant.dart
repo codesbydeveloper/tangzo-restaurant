@@ -210,8 +210,8 @@ class Constant {
 
   static String amountShow({required String? amount}) {
     final value = (amount == null || amount == "null" || amount.isEmpty) ? 0.0 : double.parse(amount);
-    final formatted = value.toStringAsFixed(currencyModel?.decimalDigits ?? 0);
-    final symbol = currencyModel?.symbol ?? '';
+    final formatted = value.toStringAsFixed(currencyModel?.decimalDigits ?? 2);
+    final symbol = currencyModel?.symbol ?? '₹';
     return currencyModel?.symbolAtRight == true ? ' $formatted $symbol' : ' $symbol $formatted';
   }
 

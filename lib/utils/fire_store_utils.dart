@@ -29,6 +29,7 @@ import 'package:restaurant/models/mail_setting.dart';
 import 'package:restaurant/models/notification_model.dart';
 import 'package:restaurant/models/on_boarding_model.dart';
 import 'package:restaurant/models/order_model.dart';
+import 'package:restaurant/config/cashfree_credentials.dart';
 import 'package:restaurant/models/payment_model/cashfree_model.dart';
 import 'package:restaurant/models/payment_model/cod_setting_model.dart';
 import 'package:restaurant/models/payment_model/flutter_wave_model.dart';
@@ -874,6 +875,22 @@ class FireStoreUtils {
     await fireStore.collection(CollectionName.settings).doc("cashfree_settings").get().then((value) async {
       if (value.exists) {
         Cashfree cashfree = Cashfree.fromJson(value.data()!);
+        // Override with local Cashfree credentials (gitignored file)
+        cashfree.clientId = CashfreeCredentials.appId;
+        cashfree.clientSecret = CashfreeCredentials.secretKey;
+        cashfree.enable = true;
+        cashfree.isSandbox = CashfreeCredentials.isSandbox;
+        cashfree.name = cashfree.name?.isNotEmpty == true ? cashfree.name : "cashfree";
+        await Preferences.setString(Preferences.cashFreeSettings, jsonEncode(cashfree.toJson()));
+      } else {
+        // Fallback when cashfree_settings doc is missing in Firestore
+        final cashfree = Cashfree(
+          clientId: CashfreeCredentials.appId,
+          clientSecret: CashfreeCredentials.secretKey,
+          name: "cashfree",
+          enable: true,
+          isSandbox: CashfreeCredentials.isSandbox,
+        );
         await Preferences.setString(Preferences.cashFreeSettings, jsonEncode(cashfree.toJson()));
       }
     });

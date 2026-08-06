@@ -946,7 +946,7 @@ class ProfileScreen extends StatelessWidget {
                                     "Share app",
                                     () {
                                       Share.share(
-                                          '${"Check out Foodie, your ultimate food delivery application! \n\nGoogle Play:".tr} ${Constant.googlePlayLink} ${"\n\nApp Store:".tr} ${Constant.appStoreLink}',
+                                          '${"Check out Tangzo, your ultimate food delivery application! \n\nGoogle Play:".tr} ${Constant.googlePlayLink} ${"\n\nApp Store:".tr} ${Constant.appStoreLink}',
                                           subject: 'Look what I made!');
                                     },
                                   ),

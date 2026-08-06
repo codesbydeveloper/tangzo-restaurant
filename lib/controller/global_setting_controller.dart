@@ -17,11 +17,19 @@ class GlobalSettingController extends GetxController {
   }
 
   Future<void> getCurrentCurrency() async {
+    // Force INR (₹) for Cashfree / India payments
+    Constant.currencyModel = CurrencyModel(id: "", code: "INR", decimalDigits: 2, enable: true, name: "Indian Rupee", symbol: "₹", symbolAtRight: false);
     FireStoreUtils.fireStore.collection(CollectionName.currencies).where("isActive", isEqualTo: true).snapshots().listen((event) {
       if (event.docs.isNotEmpty) {
-        Constant.currencyModel = CurrencyModel.fromJson(event.docs.first.data());
+        final model = CurrencyModel.fromJson(event.docs.first.data());
+        // Keep ₹ even if admin panel has another symbol configured
+        model.symbol = "₹";
+        model.code = "INR";
+        model.name = "Indian Rupee";
+        model.symbolAtRight = false;
+        Constant.currencyModel = model;
       } else {
-        Constant.currencyModel = CurrencyModel(id: "", code: "USD", decimalDigits: 2, enable: true, name: "US Dollar", symbol: "\$", symbolAtRight: false);
+        Constant.currencyModel = CurrencyModel(id: "", code: "INR", decimalDigits: 2, enable: true, name: "Indian Rupee", symbol: "₹", symbolAtRight: false);
       }
     });
     await FireStoreUtils.getSettings();

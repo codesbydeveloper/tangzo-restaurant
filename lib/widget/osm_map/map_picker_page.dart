@@ -55,7 +55,7 @@ class MapPickerPage extends StatelessWidget {
                 TileLayer(
                   urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                   subdomains: const ['a', 'b', 'c'],
-                  userAgentPackageName: Platform.isAndroid ? 'com.foodies.restaurant.android' : 'com.foodies.restaurant.ios',
+                  userAgentPackageName: Platform.isAndroid ? 'com.foodies.restaurant.restaurant' : 'com.foodies.restaurant.restaurant',
                 ),
                 MarkerLayer(
                   markers: controller.pickedPlace.value != null
