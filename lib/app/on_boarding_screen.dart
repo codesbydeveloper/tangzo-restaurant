@@ -25,14 +25,12 @@ class OnBoardingScreen extends StatelessWidget {
           body: controller.isLoading.value
               ? Constant.loader()
               : Container(
-                  decoration: BoxDecoration(
-                      image: DecorationImage(
-                          image: AssetImage(controller.selectedPageIndex.value == 0
-                              ? "assets/images/image_1.png"
-                              : controller.selectedPageIndex.value == 1
-                                  ? "assets/images/image_2.png"
-                                  : "assets/images/image_3.png"),
-                          fit: BoxFit.cover)),
+                  decoration: const BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage("assets/images/image_2.png"),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                     child: Column(
@@ -40,53 +38,56 @@ class OnBoardingScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: PageView.builder(
-                              controller: controller.pageController,
-                              onPageChanged: controller.selectedPageIndex.call,
-                              itemCount: controller.onBoardingList.length,
-                              itemBuilder: (context, index) {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Image.asset(
-                                        "assets/images/ic_logo.png",
-                                        width: 72,
-                                        height: 72,
-                                      ),
-                                      TranslatedText(
-                                        "Tangzo",
-                                        style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50, fontSize: 24, fontFamily: AppThemeData.bold),
-                                      ),
-                                      const SizedBox(
-                                        height: 30,
-                                      ),
-                                      TranslatedText(
-                                        controller.onBoardingList[index].title.toString(),
-                                        textAlign: TextAlign.start,
-                                        style: TextStyle(
-                                          color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50,
-                                          fontSize: 28,
-                                          fontFamily: AppThemeData.bold,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                      TranslatedText(
-                                        controller.onBoardingList[index].description.toString(),
-                                        textAlign: TextAlign.start,
-                                        style: TextStyle(
-                                          color: themeChange.getThem() ? AppThemeData.grey600 : AppThemeData.grey300,
-                                          fontSize: 16,
-                                          fontFamily: AppThemeData.regular,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                    ],
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadiusGeometry.circular(10),
+                                  child: Image.asset(
+                                    "assets/icons/ic_logo.png",
+                                    width: 72,
+                                    height: 72,
                                   ),
-                                );
-                              }),
+                                ),
+                                TranslatedText(
+                                  "Tangzo",
+                                  style: TextStyle(
+                                    color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50,
+                                    fontSize: 24,
+                                    fontFamily: AppThemeData.bold,
+                                  ),
+                                ),
+                                const SizedBox(
+                                  height: 30,
+                                ),
+                                if (controller.onBoardingList.isNotEmpty) ...[
+                                  TranslatedText(
+                                    controller.onBoardingList.first.title.toString(),
+                                    textAlign: TextAlign.start,
+                                    style: TextStyle(
+                                      color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50,
+                                      fontSize: 28,
+                                      fontFamily: AppThemeData.bold,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                  TranslatedText(
+                                    controller.onBoardingList.first.description.toString(),
+                                    textAlign: TextAlign.start,
+                                    style: TextStyle(
+                                      color: themeChange.getThem() ? AppThemeData.grey600 : AppThemeData.grey300,
+                                      fontSize: 16,
+                                      fontFamily: AppThemeData.regular,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
                         ),
                         const SizedBox(
                           height: 20,
@@ -96,12 +97,8 @@ class OnBoardingScreen extends StatelessWidget {
                           color: AppThemeData.secondary300,
                           textColor: AppThemeData.grey50,
                           onPress: () {
-                            if (controller.selectedPageIndex.value == 2) {
-                              Preferences.setBoolean(Preferences.isFinishOnBoardingKey, true);
-                              Get.offAll(const LoginScreen());
-                            } else {
-                              controller.pageController.jumpToPage(controller.selectedPageIndex.value + 1);
-                            }
+                            Preferences.setBoolean(Preferences.isFinishOnBoardingKey, true);
+                            Get.offAll(const LoginScreen());
                           },
                         ),
                         const SizedBox(
