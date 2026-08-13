@@ -34,7 +34,7 @@
     </queries>
 
     <application
-        android:label="restaurant"
+        android:label="Tangzo Restaurant"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
         tools:replace="android:label"

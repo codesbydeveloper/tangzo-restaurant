@@ -41,16 +41,16 @@ class Constant {
 
   static UserModel? userModel;
   static EmployeeRoleModel? employeeRoleModel;
-  static const globalUrl = "https://foodie.siswebapp.com/";
+  static const globalUrl = "https://admin.tangzo.in/";
   static const commissionSubscriptionID = "J0RwvxCWhZzQQD7Kc2Ll";
 
   static bool isZoneAvailable = false;
   static ZoneModel? selectedZone;
 
-  static String mapAPIKey = "";
+  static String mapAPIKey = "AIzaSyCJpkzNIEmPoiOUTc76RB-AwhCk06GN2JU";
   static String placeHolderImage = "";
 
-  static String senderId = '';
+  static String senderId = '728732933030';
   static String jsonNotificationFileURL = '';
 
   static String distanceType = "km";

@@ -157,88 +157,96 @@ class AddRestaurantController extends GetxController {
     } else {
       if (Constant.isPointInPolygon(selectedLocation!, selectedZone.value.area!)) {
         ShowToastDialog.showLoader("Please wait");
-        filter();
-        DeliveryCharge deliveryChargeModel = DeliveryCharge(
-            vendorCanModify: true,
-            deliveryChargesPerKm: num.parse(chargePerKmController.value.text),
-            minimumDeliveryCharges: num.parse(minDeliveryChargesController.value.text),
-            minimumDeliveryChargesWithinKm: num.parse(minDeliveryChargesWithinKMController.value.text));
+        try {
+          filter();
+          DeliveryCharge deliveryChargeModel = DeliveryCharge(
+              vendorCanModify: true,
+              deliveryChargesPerKm: num.parse(chargePerKmController.value.text),
+              minimumDeliveryCharges: num.parse(minDeliveryChargesController.value.text),
+              minimumDeliveryChargesWithinKm: num.parse(minDeliveryChargesWithinKMController.value.text));
 
-        if (vendorModel.value.id == null) {
-          vendorModel.value = VendorModel();
-          vendorModel.value.createdAt = Timestamp.now();
-        }
-        for (int i = 0; i < images.length; i++) {
-          if (images[i].runtimeType == XFile) {
-            String url = await Constant.uploadUserImageToFireStorage(
-              File(images[i].path),
-              "profileImage/${FireStoreUtils.getCurrentUid()}",
-              File(images[i].path).path.split('/').last,
-            );
-            images.removeAt(i);
-            images.insert(i, url);
+          if (vendorModel.value.id == null) {
+            vendorModel.value = VendorModel();
+            vendorModel.value.createdAt = Timestamp.now();
           }
-        }
+          for (int i = 0; i < images.length; i++) {
+            if (images[i].runtimeType == XFile) {
+              String url = await Constant.uploadUserImageToFireStorage(
+                File(images[i].path),
+                "profileImage/${FireStoreUtils.getCurrentUid()}",
+                File(images[i].path).path.split('/').last,
+              );
+              images.removeAt(i);
+              images.insert(i, url);
+            }
+          }
 
-        vendorModel.value.id = Constant.userModel?.vendorID;
-        vendorModel.value.author = Constant.userModel!.id;
-        vendorModel.value.authorName = Constant.userModel!.firstName;
-        vendorModel.value.authorProfilePic = Constant.userModel!.profilePictureURL;
+          vendorModel.value.id = Constant.userModel?.vendorID;
+          vendorModel.value.author = Constant.userModel!.id;
+          vendorModel.value.authorName = Constant.userModel!.firstName;
+          vendorModel.value.authorProfilePic = Constant.userModel!.profilePictureURL;
 
-        vendorModel.value.categoryID = selectedCategories.map((e) => e.id ?? '').toList();
-        vendorModel.value.categoryTitle = selectedCategories.map((e) => e.title ?? '').toList();
-        vendorModel.value.g = G(
-            geohash: Geoflutterfire().point(latitude: selectedLocation!.latitude, longitude: selectedLocation!.longitude).hash,
-            geopoint: GeoPoint(selectedLocation!.latitude, selectedLocation!.longitude));
-        vendorModel.value.description = restaurantDescriptionController.value.text;
-        vendorModel.value.phonenumber = mobileNumberController.value.text;
-        vendorModel.value.filters = Filters.fromJson(filters);
-        vendorModel.value.location = addressController.value.text;
-        vendorModel.value.latitude = selectedLocation!.latitude;
-        vendorModel.value.longitude = selectedLocation!.longitude;
-        vendorModel.value.photos = images;
-        if (images.isNotEmpty) {
-          vendorModel.value.photo = images.first;
-        } else {
-          vendorModel.value.photo = null;
-        }
+          vendorModel.value.categoryID = selectedCategories.map((e) => e.id ?? '').toList();
+          vendorModel.value.categoryTitle = selectedCategories.map((e) => e.title ?? '').toList();
+          vendorModel.value.g = G(
+              geohash: Geoflutterfire().point(latitude: selectedLocation!.latitude, longitude: selectedLocation!.longitude).hash,
+              geopoint: GeoPoint(selectedLocation!.latitude, selectedLocation!.longitude));
+          vendorModel.value.description = restaurantDescriptionController.value.text;
+          vendorModel.value.phonenumber = mobileNumberController.value.text;
+          vendorModel.value.filters = Filters.fromJson(filters);
+          vendorModel.value.location = addressController.value.text;
+          vendorModel.value.latitude = selectedLocation!.latitude;
+          vendorModel.value.longitude = selectedLocation!.longitude;
+          vendorModel.value.photos = images;
+          if (images.isNotEmpty) {
+            vendorModel.value.photo = images.first;
+          } else {
+            vendorModel.value.photo = null;
+          }
 
-        vendorModel.value.deliveryCharge = deliveryChargeModel;
-        vendorModel.value.title = restaurantNameController.value.text;
-        vendorModel.value.zoneId = selectedZone.value.id;
-        vendorModel.value.isSelfDelivery = isSelfDelivery.value;
-        vendorModel.value.packagingCharge = packagingChargeAmountController.value.text.isNotEmpty ? packagingChargeAmountController.value.text : '0';
+          vendorModel.value.deliveryCharge = deliveryChargeModel;
+          vendorModel.value.title = restaurantNameController.value.text;
+          vendorModel.value.zoneId = selectedZone.value.id;
+          vendorModel.value.isSelfDelivery = isSelfDelivery.value;
+          vendorModel.value.packagingCharge = packagingChargeAmountController.value.text.isNotEmpty ? packagingChargeAmountController.value.text : '0';
 
-        if ((Constant.adminCommission?.isEnabled == true || Constant.isSubscriptionModelApplied == true) && Constant.userModel?.role != Constant.userRoleEmployee) {
-          vendorModel.value.subscriptionPlanId = userModel.value.subscriptionPlanId;
-          vendorModel.value.subscriptionPlan = userModel.value.subscriptionPlan;
-          vendorModel.value.subscriptionExpiryDate = userModel.value.subscriptionExpiryDate;
-          vendorModel.value.subscriptionTotalOrders = userModel.value.subscriptionPlan?.orderLimit;
-        }
+          if ((Constant.adminCommission?.isEnabled == true || Constant.isSubscriptionModelApplied == true) && Constant.userModel?.role != Constant.userRoleEmployee) {
+            vendorModel.value.subscriptionPlanId = userModel.value.subscriptionPlanId;
+            vendorModel.value.subscriptionPlan = userModel.value.subscriptionPlan;
+            vendorModel.value.subscriptionExpiryDate = userModel.value.subscriptionExpiryDate;
+            vendorModel.value.subscriptionTotalOrders = userModel.value.subscriptionPlan?.orderLimit;
+          }
 
-        if (Constant.userModel?.vendorID?.isNotEmpty == true) {
-          await FireStoreUtils.updateVendor(vendorModel.value).then((value) {
+          if (Constant.userModel?.vendorID?.isNotEmpty == true) {
+            await FireStoreUtils.updateVendor(vendorModel.value);
             ShowToastDialog.closeLoader();
             ShowToastDialog.showToast("Restaurant details save successfully");
             Get.back(result: {'lat': vendorModel.value.latitude, 'lng': vendorModel.value.longitude});
-          });
-        } else {
-          vendorModel.value.adminCommission = Constant.adminCommission;
-          vendorModel.value.workingHours = [
-            WorkingHours(day: 'Monday', timeslot: [Timeslot(from: '00:00', to: '23:59')]),
-            WorkingHours(day: 'Tuesday', timeslot: [Timeslot(from: '00:00', to: '23:59')]),
-            WorkingHours(day: 'Wednesday', timeslot: [Timeslot(from: '00:00', to: '23:59')]),
-            WorkingHours(day: 'Thursday', timeslot: [Timeslot(from: '00:00', to: '23:59')]),
-            WorkingHours(day: 'Friday', timeslot: [Timeslot(from: '00:00', to: '23:59')]),
-            WorkingHours(day: 'Saturday', timeslot: [Timeslot(from: '00:00', to: '23:59')]),
-            WorkingHours(day: 'Sunday', timeslot: [Timeslot(from: '00:00', to: '23:59')])
-          ];
+          } else {
+            vendorModel.value.adminCommission = Constant.adminCommission;
+            vendorModel.value.workingHours = [
+              WorkingHours(day: 'Monday', timeslot: [Timeslot(from: '00:00', to: '23:59')]),
+              WorkingHours(day: 'Tuesday', timeslot: [Timeslot(from: '00:00', to: '23:59')]),
+              WorkingHours(day: 'Wednesday', timeslot: [Timeslot(from: '00:00', to: '23:59')]),
+              WorkingHours(day: 'Thursday', timeslot: [Timeslot(from: '00:00', to: '23:59')]),
+              WorkingHours(day: 'Friday', timeslot: [Timeslot(from: '00:00', to: '23:59')]),
+              WorkingHours(day: 'Saturday', timeslot: [Timeslot(from: '00:00', to: '23:59')]),
+              WorkingHours(day: 'Sunday', timeslot: [Timeslot(from: '00:00', to: '23:59')])
+            ];
 
-          await FireStoreUtils.firebaseCreateNewVendor(vendorModel.value).then((value) {
+            await FireStoreUtils.firebaseCreateNewVendor(vendorModel.value);
             ShowToastDialog.closeLoader();
             ShowToastDialog.showToast("Restaurant details save successfully");
             Get.back(result: {'lat': vendorModel.value.latitude, 'lng': vendorModel.value.longitude});
-          });
+          }
+        } catch (e) {
+          ShowToastDialog.closeLoader();
+          final message = e.toString();
+          if (message.contains('unauthorized') || message.contains('permission') || message.contains('403')) {
+            ShowToastDialog.showToast("Image upload failed: Storage permission denied. Update Firebase Storage rules.");
+          } else {
+            ShowToastDialog.showToast("Failed to save restaurant: $e");
+          }
         }
       } else {
         ShowToastDialog.showToast("The chosen area is outside the selected zone.");
