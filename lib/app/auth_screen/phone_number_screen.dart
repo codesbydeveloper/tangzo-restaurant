@@ -49,9 +49,9 @@ class PhoneNumberScreen extends StatelessWidget {
                     height: 32,
                   ),
                   TextFieldWidget(
-                    title: 'Phone Number',
+                    title: 'WhatsApp Number',
                     controller: controller.phoneNUmberEditingController.value,
-                    hintText: 'Enter Phone Number',
+                    hintText: 'Enter WhatsApp Number',
                     textInputType: const TextInputType.numberWithOptions(signed: true, decimal: true),
                     textInputAction: TextInputAction.done,
                     inputFormatters: [

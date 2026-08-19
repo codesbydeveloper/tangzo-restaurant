@@ -46,11 +46,11 @@ class OtpScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           TranslatedText(
-                            "Verify Your Number 📱",
+                            "Verify Your WhatsApp Number 📱",
                             style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900, fontSize: 22, fontFamily: AppThemeData.semiBold),
                           ),
                           TranslatedText(
-                            "${'Enter the OTP sent to your mobile number.'.tr} ${controller.countryCode.value} ${Constant.maskingString(controller.phoneNumber.value, 3)}",
+                            "${'Enter the OTP sent to your WhatsApp number.'.tr} ${controller.countryCode.value} ${Constant.maskingString(controller.phoneNumber.value, 3)}",
                             textAlign: TextAlign.start,
                             style: TextStyle(
                               color: themeChange.getThem() ? AppThemeData.grey200 : AppThemeData.grey700,
@@ -62,21 +62,22 @@ class OtpScreen extends StatelessWidget {
                           const SizedBox(
                             height: 60,
                           ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: MaterialPinField(
-                              length: 6,
+                          LayoutBuilder(builder: (context, constraints) {
+                            const otpLength = 6;
+                            const spacing = 6.0;
+                            final cellWidth = (constraints.maxWidth -
+                                spacing * (otpLength - 1)) /
+                                otpLength;
+                            return MaterialPinField(
+                              length: otpLength,
                               keyboardType: TextInputType.number,
                               enableAutofill: true,
                               autofillHints: const [AutofillHints.oneTimeCode],
                               hintCharacter: "-",
-
-                              // Controller
                               pinController: controller.otpController.value,
-
-                              // Theme
                               theme: MaterialPinTheme(
-                                cellSize: const Size(50, 50),
+                                cellSize: Size(cellWidth, 50),
+                                spacing: spacing,
                                 shape: MaterialPinShape.outlined,
                                 borderRadius: BorderRadius.circular(10),
                                 textStyle: TextStyle(
@@ -93,17 +94,12 @@ class OtpScreen extends StatelessWidget {
                                 cursorColor: AppThemeData.secondary300,
                                 errorColor: themeChange.getThem() ? AppThemeData.grey600 : AppThemeData.grey300,
                               ),
-
-                              onChanged: (value) {
-                                // Optional: handle typing
-                              },
-
+                              onChanged: (value) {},
                               onCompleted: (pin) async {
                                 debugPrint("OTP Completed: $pin");
-                                // Call verify method here
                               },
-                            ),
-                          ),
+                            );
+                          }),
                           const SizedBox(
                             height: 50,
                           ),
@@ -112,93 +108,53 @@ class OtpScreen extends StatelessWidget {
                             color: AppThemeData.secondary300,
                             textColor: AppThemeData.grey50,
                             onPress: () async {
-                              if (controller.otpController.value.text.length == 6) {
-                                ShowToastDialog.showLoader("Verify otp");
+                              final entered =
+                              controller.otpController.value.text.trim();
+                              if (entered.length != 6) {
+                                ShowToastDialog.showToast(
+                                    "Enter a valid 6-digit OTP");
+                                return;
+                              }
 
-                                PhoneAuthCredential credential = PhoneAuthProvider.credential(verificationId: controller.verificationId.value, smsCode: controller.otpController.value.text);
-                                String? fcmToken = await NotificationService.getToken();
-                                await FirebaseAuth.instance.signInWithCredential(credential).then((value) async {
-                                  if (value.additionalUserInfo!.isNewUser) {
-                                    UserModel userModel = UserModel();
-                                    userModel.id = value.user!.uid;
-                                    userModel.countryCode = controller.countryCode.value;
-                                    userModel.countryISOCode = controller.countryISOCode.value;
-                                    userModel.phoneNumber = controller.phoneNumber.value;
-                                    userModel.fcmToken = fcmToken;
-                                    userModel.provider = 'phone';
+                              if (!controller.verifyOtp(entered)) {
+                                ShowToastDialog.showToast(
+                                    "Incorrect OTP. Please try again.");
+                                return;
+                              }
 
-                                    ShowToastDialog.closeLoader();
-                                    Get.off(const SignupScreen(), arguments: {
-                                      "userModel": userModel,
-                                      "type": "mobileNumber",
-                                    });
-                                  } else {
-                                    await FireStoreUtils.userExistOrNot(value.user!.uid).then((userExit) async {
-                                      ShowToastDialog.closeLoader();
-                                      if (userExit == true) {
-                                        UserModel? userModel = await FireStoreUtils.getUserProfile(value.user!.uid);
-                                        if (userModel!.role == Constant.userRoleVendor) {
-                                          if (userModel.active == true) {
-                                            userModel.fcmToken = await NotificationService.getToken();
-                                            await FireStoreUtils.updateUser(userModel);
-                                            bool isPlanExpire = false;
-                                            if (userModel.subscriptionPlan?.id != null) {
-                                              if (userModel.subscriptionExpiryDate == null) {
-                                                if (userModel.subscriptionPlan?.expiryDay == '-1') {
-                                                  isPlanExpire = false;
-                                                } else {
-                                                  isPlanExpire = true;
-                                                }
-                                              } else {
-                                                DateTime expiryDate = userModel.subscriptionExpiryDate!.toDate();
-                                                isPlanExpire = expiryDate.isBefore(DateTime.now());
-                                              }
-                                            } else {
-                                              isPlanExpire = true;
-                                            }
-                                            if (userModel.subscriptionPlanId == null || isPlanExpire == true) {
-                                              if (Constant.adminCommission?.isEnabled == false && Constant.isSubscriptionModelApplied == false) {
-                                                Get.offAll(const DashBoardScreen());
-                                              } else {
-                                                Get.offAll(const SubscriptionPlanScreen());
-                                              }
-                                            } else if (userModel.subscriptionPlan?.features?.restaurantMobileApp == true) {
-                                              Get.offAll(const DashBoardScreen());
-                                            } else {
-                                              Get.offAll(const AppNotAccessScreen());
-                                            }
-                                          } else {
-                                            ShowToastDialog.showToast("This user is disable please contact to administrator");
-                                            await FirebaseAuth.instance.signOut();
-                                            Get.offAll(const LoginScreen());
-                                          }
-                                        } else {
-                                          await FirebaseAuth.instance.signOut();
-                                          Get.offAll(const LoginScreen());
-                                          ShowToastDialog.showToast("This user is not created in restaurant application.");
-                                        }
-                                      } else {
-                                        UserModel userModel = UserModel();
-                                        userModel.id = value.user!.uid;
-                                        userModel.countryCode = controller.countryCode.value;
-                                        userModel.countryISOCode = controller.countryISOCode.value;
-                                        userModel.phoneNumber = controller.phoneNumber.value;
-                                        userModel.fcmToken = fcmToken;
-                                        userModel.provider = 'phone';
+                              ShowToastDialog.showLoader("Please wait");
 
-                                        Get.off(const SignupScreen(), arguments: {
-                                          "userModel": userModel,
-                                          "type": "mobileNumber",
-                                        });
-                                      }
-                                    });
-                                  }
-                                }).catchError((error) {
-                                  ShowToastDialog.closeLoader();
-                                  ShowToastDialog.showToast("Invalid Code");
+                              try {
+                                final existingUser =
+                                await FireStoreUtils.getUserByPhoneNumber(
+                                  countryCode: controller.countryCode.value,
+                                  phoneNumber: controller.phoneNumber.value,
+                                );
+
+                                ShowToastDialog.closeLoader();
+
+                                if (existingUser != null) {
+                                  ShowToastDialog.showToast(
+                                    "This WhatsApp number is already registered. Please login with your email and password.",
+                                  );
+                                  Get.offAll(const LoginScreen());
+                                  return;
+                                }
+
+                                final UserModel userModel = UserModel()
+                                  ..countryCode = controller.countryCode.value
+                                  ..countryISOCode =
+                                      controller.countryISOCode.value
+                                  ..phoneNumber = controller.phoneNumber.value
+                                  ..provider = 'whatsapp';
+
+                                Get.off(const SignupScreen(), arguments: {
+                                  "userModel": userModel,
+                                  "type": "whatsapp",
                                 });
-                              } else {
-                                ShowToastDialog.showToast("Enter Valid otp");
+                              } catch (e) {
+                                ShowToastDialog.closeLoader();
+                                ShowToastDialog.showToast(e.toString());
                               }
                             },
                           ),
