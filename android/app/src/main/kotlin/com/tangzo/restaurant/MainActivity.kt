@@ -1,4 +1,4 @@
-package com.foodies.restaurant.restaurant
+package com.tangzo.restaurant
 
 import android.content.ContentValues
 import android.graphics.Bitmap
