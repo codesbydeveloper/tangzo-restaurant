@@ -37,6 +37,7 @@
         android:label="Tangzo Restaurant"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
+        android:extractNativeLibs="false"
         tools:replace="android:label"
         android:requestLegacyExternalStorage="true">
         <activity

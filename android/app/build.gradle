@@ -53,6 +53,10 @@ android {
         versionName = flutterVersionName
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
+        // Ship only ARM ABIs — avoids non-16KB x86_64 libs from legacy payment SDKs
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
     }
 
     buildTypes {
@@ -62,6 +66,13 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.debug
+        }
+    }
+
+    packaging {
+        jniLibs {
+            // Required for Google Play 16KB page size compliance
+            useLegacyPackaging = false
         }
     }
     configurations.all {
@@ -75,11 +86,13 @@ android {
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
     implementation platform('com.google.firebase:firebase-bom:33.2.0')
-    implementation 'io.card:android-sdk:5.5.1'
-    implementation 'com.tencent.mm.opensdk:wechat-sdk-android-without-mta:6.7.0'
-    implementation 'com.google.android.gms:play-services-wallet:19.4.0'
+    // Legacy payment SDKs removed — Cashfree uses WebView/HTTP only.
+    // These bundled 4KB-aligned native libs (card.io, OpenCV) and failed Play 16KB checks.
+    // implementation 'io.card:android-sdk:5.5.1'
+    // implementation 'com.tencent.mm.opensdk:wechat-sdk-android-without-mta:6.7.0'
+    // implementation 'com.google.android.gms:play-services-wallet:19.4.0'
+    // implementation 'com.foloosi:FoloosiSDK:2.0.24'
     implementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'com.foloosi:FoloosiSDK:2.0.24'
     implementation 'com.google.code.gson:gson:2.10.1'
 }
 

@@ -77,21 +77,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            decoration: ShapeDecoration(
-                              color: themeChange.getThem() ? AppThemeData.danger600 : AppThemeData.danger50,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: TranslatedText(
-                                "Product prices include a 15% admin commission. For instance, a \$100 product will cost \$115 for the customer. 15% will be applied automatically.",
-                                style: TextStyle(color: themeChange.getThem() ? AppThemeData.danger200 : AppThemeData.danger400, fontSize: 14, fontFamily: AppThemeData.medium),
-                              ),
-                            ),
-                          ),
+                          // Container(
+                          //   decoration: ShapeDecoration(
+                          //     color: themeChange.getThem() ? AppThemeData.danger600 : AppThemeData.danger50,
+                          //     shape: RoundedRectangleBorder(
+                          //       borderRadius: BorderRadius.circular(12),
+                          //     ),
+                          //   ),
+                          //   child: Padding(
+                          //     padding: const EdgeInsets.all(8.0),
+                          //     child: TranslatedText(
+                          //       "Product prices include a 15% admin commission. For instance, a \$100 product will cost \$115 for the customer. 15% will be applied automatically.",
+                          //       style: TextStyle(color: themeChange.getThem() ? AppThemeData.danger200 : AppThemeData.danger400, fontSize: 14, fontFamily: AppThemeData.medium),
+                          //     ),
+                          //   ),
+                          // ),
                           const SizedBox(
                             height: 10,
                           ),
