@@ -33,14 +33,14 @@
 				<string>Editor</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
-					<string>com.googleusercontent.apps.275231286183-nvmhc9n0cv3missat9gkdejp8lpjtk2h</string>
+					<string>com.googleusercontent.apps.728732933030-8o1j0ntgfl7c7f3jt1knrtdpppl589pk</string>
 				</array>
 			</dict>
 		</array>
 		<key>CFBundleVersion</key>
 		<string>$(CURRENT_PROJECT_VERSION)</string>
 		<key>GIDClientID</key>
-		<string>275231286183-nvmhc9n0cv3missat9gkdejp8lpjtk2h.apps.googleusercontent.com</string>
+		<string>728732933030-8o1j0ntgfl7c7f3jt1knrtdpppl589pk.apps.googleusercontent.com</string>
 		<key>ITSAppUsesNonExemptEncryption</key>
 		<false />
 		<key>LSRequiresIPhoneOS</key>
