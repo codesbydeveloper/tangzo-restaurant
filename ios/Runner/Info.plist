@@ -50,17 +50,13 @@
 		<key>NSBluetoothAlwaysUsageDescription</key>
 		<string>Bluetooth access to connect 58mm or 80mm thermal printers</string>
 		<key>NSCameraUsageDescription</key>
-		<string>This app needs access to camera permission</string>
-		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-		<string>This app needs access to location when open and in the background.</string>
-		<key>NSLocationAlwaysUsageDescription</key>
-		<string>This app needs access to location when in the background.</string>
+		<string>Tangzo Restaurant uses the camera to take photos of your menu items, restaurant, profile picture, and business verification documents.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>This app needs access to location when open.</string>
+		<string>Tangzo Restaurant uses your location to place your restaurant on the map and confirm your business address is within your selected delivery zone when you add or edit restaurant details.</string>
 		<key>NSMicrophoneUsageDescription</key>
-		<string>Used to capture audio for image picker plugin</string>
+		<string>Tangzo Restaurant uses the microphone when you record a video to send in chat or upload a restaurant story.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>This app needs access to your gallery photo.</string>
+		<string>Tangzo Restaurant uses your photo library to upload menu images, restaurant photos, profile pictures, and business verification documents.</string>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true />
 		<key>UIFileSharingEnabled</key>
