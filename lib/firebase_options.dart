@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCKEpbC7OxzWyFSkwAjT6Ue8RqisTN4WR8',
-    appId: '1:728732933030:android:cb981abba45ab96b418d67',
+    appId: '1:728732933030:android:fd22e36a08e18b2a418d67',
     messagingSenderId: '728732933030',
     projectId: 'tangzo-apps',
     databaseURL: 'https://tangzo-apps-default-rtdb.firebaseio.com',
@@ -66,6 +66,6 @@ class DefaultFirebaseOptions {
     databaseURL: 'https://tangzo-apps-default-rtdb.firebaseio.com',
     storageBucket: 'tangzo-apps.firebasestorage.app',
     iosClientId: '728732933030-5ktikfai8crh9qjnld4cjr1bv2gat139.apps.googleusercontent.com',
-    iosBundleId: 'com.foodies.restaurant.restaurant',
+    iosBundleId: 'com.tangzo.restaurant',
   );
 }

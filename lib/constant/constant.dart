@@ -51,6 +51,8 @@ class Constant {
   static String placeHolderImage = "";
 
   static String senderId = '728732933030';
+  // Web OAuth client ID from Firebase (client_type 3) — required for Google Sign-In + Firebase Auth on Android release builds
+  static const String googleWebClientId = '728732933030-060cg97kmedeo6hbb84ocgms5e4lo267.apps.googleusercontent.com';
   static String jsonNotificationFileURL = '';
 
   static String distanceType = "km";

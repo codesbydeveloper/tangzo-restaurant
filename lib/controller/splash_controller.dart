@@ -18,7 +18,7 @@ import 'package:restaurant/utils/preferences.dart';
 class SplashController extends GetxController {
   @override
   void onInit() {
-    Timer(const Duration(seconds: 3), () => redirectScreen());
+    Timer(const Duration(seconds: 1), () => redirectScreen());
     super.onInit();
   }
 

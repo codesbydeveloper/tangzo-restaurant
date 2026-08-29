@@ -264,7 +264,12 @@ class LoginController extends GetxController {
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn.instance;
 
-      await googleSignIn.initialize();
+      await googleSignIn.initialize(
+        serverClientId: Constant.googleWebClientId,
+      );
+
+      // Clear any cached session before starting a fresh sign-in flow
+      await googleSignIn.signOut();
 
       final GoogleSignInAccount googleUser = await googleSignIn.authenticate();
       if (googleUser.id.isEmpty) return null;
@@ -286,6 +291,10 @@ class LoginController extends GetxController {
       }
 
       final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      if (googleAuth.idToken == null || googleAuth.idToken!.isEmpty) {
+        ShowToastDialog.showToast("Google Sign-In failed: missing ID token. Check Firebase OAuth setup.");
+        return null;
+      }
 
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
@@ -293,8 +302,22 @@ class LoginController extends GetxController {
       final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
 
       return userCredential;
+    } on GoogleSignInException catch (e) {
+      debugPrint("Google Sign-In Error: $e");
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        // User closed the account picker — not a config error
+        return null;
+      }
+      ShowToastDialog.showToast("Google Sign-In failed. Please try again.");
+      return null;
     } catch (e) {
-      print("Google Sign-In Error: $e");
+      debugPrint("Google Sign-In Error: $e");
+      final message = e.toString();
+      if (message.contains('ApiException: 10') || message.contains('DEVELOPER_ERROR')) {
+        ShowToastDialog.showToast("Google Sign-In config error: add Play Store SHA-1 in Firebase and upload a new build.");
+      } else {
+        ShowToastDialog.showToast("Google Sign-In failed. Please try again.");
+      }
       return null;
     }
   }
