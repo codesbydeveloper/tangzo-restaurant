@@ -17,6 +17,10 @@ import 'package:get/get.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class LoginController extends GetxController {
+  static const String _googleWebClientId = '728732933030-060cg97kmedeo6hbb84ocgms5e4lo267.apps.googleusercontent.com';
+  static const List<String> _googleScopes = ['email', 'profile'];
+  static bool _googleSignInInitialized = false;
+
   //Owner
   Rx<TextEditingController> emailEditingControllerOwner = TextEditingController().obs;
   Rx<TextEditingController> passwordEditingControllerOwner = TextEditingController().obs;
@@ -98,83 +102,78 @@ class LoginController extends GetxController {
   }
 
   Future<void> loginWithGoogle() async {
-    ShowToastDialog.showLoader("please wait...");
-    await signInWithGoogle().then((value) async {
-      ShowToastDialog.closeLoader();
-      if (value != null) {
-        if (value.additionalUserInfo!.isNewUser) {
-          UserModel userModel = UserModel();
-          userModel.id = value.user!.uid;
-          userModel.email = value.user!.email;
-          userModel.firstName = value.user!.displayName?.split(' ').first;
-          userModel.lastName = value.user!.displayName?.split(' ').last;
-          userModel.provider = 'google';
+    final value = await signInWithGoogle();
+    if (value == null) {
+      return;
+    }
 
-          ShowToastDialog.closeLoader();
-          Get.off(const SignupScreen(), arguments: {
-            "userModel": userModel,
-            "type": "google",
-          });
+    if (value.additionalUserInfo!.isNewUser) {
+      UserModel userModel = UserModel();
+      userModel.id = value.user!.uid;
+      userModel.email = value.user!.email;
+      userModel.firstName = value.user!.displayName?.split(' ').first;
+      userModel.lastName = value.user!.displayName?.split(' ').last;
+      userModel.provider = 'google';
+
+      Get.off(const SignupScreen(), arguments: {
+        "userModel": userModel,
+        "type": "google",
+      });
+      return;
+    }
+
+    final userExit = await FireStoreUtils.userExistOrNot(value.user!.uid);
+    if (userExit == true) {
+      UserModel? userModel = await FireStoreUtils.getUserProfile(value.user!.uid);
+      if (userModel!.role == Constant.userRoleVendor) {
+        if (userModel.active == true) {
+          userModel.fcmToken = await NotificationService.getToken();
+          await FireStoreUtils.updateUser(userModel);
+          await _navigateVendorAfterLogin(userModel);
         } else {
-          await FireStoreUtils.userExistOrNot(value.user!.uid).then((userExit) async {
-            ShowToastDialog.closeLoader();
-            if (userExit == true) {
-              UserModel? userModel = await FireStoreUtils.getUserProfile(value.user!.uid);
-              if (userModel!.role == Constant.userRoleVendor) {
-                if (userModel.active == true) {
-                  userModel.fcmToken = await NotificationService.getToken();
-                  await FireStoreUtils.updateUser(userModel);
-                  bool isPlanExpire = false;
-                  if (userModel.subscriptionPlan?.id != null) {
-                    if (userModel.subscriptionExpiryDate == null) {
-                      if (userModel.subscriptionPlan?.expiryDay == '-1') {
-                        isPlanExpire = false;
-                      } else {
-                        isPlanExpire = true;
-                      }
-                    } else {
-                      DateTime expiryDate = userModel.subscriptionExpiryDate!.toDate();
-                      isPlanExpire = expiryDate.isBefore(DateTime.now());
-                    }
-                  } else {
-                    isPlanExpire = true;
-                  }
-                  if (userModel.subscriptionPlanId == null || isPlanExpire == true) {
-                    if (Constant.adminCommission?.isEnabled == false && Constant.isSubscriptionModelApplied == false) {
-                      Get.offAll(const DashBoardScreen());
-                    } else {
-                      Get.offAll(const SubscriptionPlanScreen());
-                    }
-                  } else if (userModel.subscriptionPlan?.features?.restaurantMobileApp == true) {
-                    Get.offAll(const DashBoardScreen());
-                  } else {
-                    Get.offAll(const AppNotAccessScreen());
-                  }
-                } else {
-                  await FirebaseAuth.instance.signOut();
-                  ShowToastDialog.showToast("This user is disable please contact to administrator");
-                }
-              } else {
-                await FirebaseAuth.instance.signOut();
-                // ShowToastDialog.showToast("This user is disable please contact to administrator");
-              }
-            } else {
-              UserModel userModel = UserModel();
-              userModel.id = value.user!.uid;
-              userModel.email = value.user!.email;
-              userModel.firstName = value.user!.displayName?.split(' ').first;
-              userModel.lastName = value.user!.displayName?.split(' ').last;
-              userModel.provider = 'google';
-
-              Get.off(const SignupScreen(), arguments: {
-                "userModel": userModel,
-                "type": "google",
-              });
-            }
-          });
+          await FirebaseAuth.instance.signOut();
+          ShowToastDialog.showToast("This user is disable please contact to administrator");
         }
+      } else {
+        await FirebaseAuth.instance.signOut();
       }
-    });
+    } else {
+      UserModel userModel = UserModel();
+      userModel.id = value.user!.uid;
+      userModel.email = value.user!.email;
+      userModel.firstName = value.user!.displayName?.split(' ').first;
+      userModel.lastName = value.user!.displayName?.split(' ').last;
+      userModel.provider = 'google';
+
+      Get.off(const SignupScreen(), arguments: {
+        "userModel": userModel,
+        "type": "google",
+      });
+    }
+  }
+
+  Future<void> _navigateVendorAfterLogin(UserModel userModel) async {
+    bool isPlanExpire = false;
+    if (userModel.subscriptionPlan?.id != null) {
+      if (userModel.subscriptionExpiryDate == null) {
+        isPlanExpire = userModel.subscriptionPlan?.expiryDay != '-1';
+      } else {
+        isPlanExpire = userModel.subscriptionExpiryDate!.toDate().isBefore(DateTime.now());
+      }
+    } else {
+      isPlanExpire = true;
+    }
+    if (userModel.subscriptionPlanId == null || isPlanExpire == true) {
+      if (Constant.adminCommission?.isEnabled == false && Constant.isSubscriptionModelApplied == false) {
+        Get.offAll(const DashBoardScreen());
+      } else {
+        Get.offAll(const SubscriptionPlanScreen());
+      }
+    } else if (userModel.subscriptionPlan?.features?.restaurantMobileApp == true) {
+      Get.offAll(const DashBoardScreen());
+    } else {
+      Get.offAll(const AppNotAccessScreen());
+    }
   }
 
   Future<void> loginWithApple() async {
@@ -260,64 +259,72 @@ class LoginController extends GetxController {
     });
   }
 
+  Future<void> _ensureGoogleSignInInitialized() async {
+    if (_googleSignInInitialized) {
+      return;
+    }
+    await GoogleSignIn.instance.initialize(
+      serverClientId: _googleWebClientId,
+    );
+    _googleSignInInitialized = true;
+  }
+
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+      await _ensureGoogleSignInInitialized();
 
-      await googleSignIn.initialize(
-        serverClientId: Constant.googleWebClientId,
+      await GoogleSignIn.instance.signOut();
+
+      final GoogleSignInAccount googleUser = await GoogleSignIn.instance.authenticate(
+        scopeHint: _googleScopes,
       );
+      if (googleUser.id.isEmpty) {
+        return null;
+      }
 
-      // Clear any cached session before starting a fresh sign-in flow
-      await googleSignIn.signOut();
-
-      final GoogleSignInAccount googleUser = await googleSignIn.authenticate();
-      if (googleUser.id.isEmpty) return null;
-
-      final email = googleUser.email;
-
-      UserModel? userModel = await FireStoreUtils.getUserByEmail(email);
+      UserModel? userModel = await FireStoreUtils.getUserByEmail(googleUser.email);
 
       if (userModel?.provider != "google" && userModel?.provider != "apple" && userModel?.provider != null) {
-        ShowToastDialog.closeLoader();
         ShowToastDialog.showToast("The account already exists for that email.");
         return null;
       }
 
       if ((userModel?.provider == "google" || userModel?.provider == "apple") && userModel?.role != Constant.userRoleVendor) {
-        ShowToastDialog.closeLoader();
         ShowToastDialog.showToast("The account already exists for that email.");
         return null;
       }
 
       final GoogleSignInAuthentication googleAuth = googleUser.authentication;
       if (googleAuth.idToken == null || googleAuth.idToken!.isEmpty) {
-        ShowToastDialog.showToast("Google Sign-In failed: missing ID token. Check Firebase OAuth setup.");
+        debugPrint("Google Sign-In Error: idToken is null");
+        ShowToastDialog.showToast("Google sign-in failed. Please try again.");
         return null;
       }
 
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-
-      return userCredential;
+      return await FirebaseAuth.instance.signInWithCredential(credential);
     } on GoogleSignInException catch (e) {
       debugPrint("Google Sign-In Error: $e");
-      if (e.code == GoogleSignInExceptionCode.canceled) {
-        // User closed the account picker — not a config error
-        return null;
+      final message = e.toString();
+      if (message.contains('Account reauth failed') ||
+          message.contains('ApiException: 10') ||
+          message.contains('DEVELOPER_ERROR')) {
+        ShowToastDialog.showToast(
+          "Google sign-in config error: verify Play App signing SHA-1 is in Firebase, then upload a new build.",
+        );
+      } else if (e.code != GoogleSignInExceptionCode.canceled) {
+        ShowToastDialog.showToast("Google sign-in failed. Please try again.");
       }
-      ShowToastDialog.showToast("Google Sign-In failed. Please try again.");
+      return null;
+    } on FirebaseAuthException catch (e) {
+      debugPrint("Google Sign-In FirebaseAuthException: ${e.code} ${e.message}");
+      ShowToastDialog.showToast(e.message ?? "Google sign-in failed.");
       return null;
     } catch (e) {
       debugPrint("Google Sign-In Error: $e");
-      final message = e.toString();
-      if (message.contains('ApiException: 10') || message.contains('DEVELOPER_ERROR')) {
-        ShowToastDialog.showToast("Google Sign-In config error: add Play Store SHA-1 in Firebase and upload a new build.");
-      } else {
-        ShowToastDialog.showToast("Google Sign-In failed. Please try again.");
-      }
+      ShowToastDialog.showToast("Google sign-in failed. Please try again.");
       return null;
     }
   }
