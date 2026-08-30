@@ -41,8 +41,6 @@
 		<string>$(CURRENT_PROJECT_VERSION)</string>
 		<key>GIDClientID</key>
 		<string>728732933030-8o1j0ntgfl7c7f3jt1knrtdpppl589pk.apps.googleusercontent.com</string>
-		<key>ITSAppUsesNonExemptEncryption</key>
-		<false />
 		<key>LSRequiresIPhoneOS</key>
 		<true />
 		<key>NSBluetoothPeripheralUsageDescription</key>
@@ -52,7 +50,9 @@
 		<key>NSCameraUsageDescription</key>
 		<string>Tangzo Restaurant uses the camera to take photos of your menu items, restaurant, profile picture, and business verification documents.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>Tangzo Restaurant uses your location to place your restaurant on the map and confirm your business address is within your selected delivery zone when you add or edit restaurant details.</string>
+        <string>Tangzo Restaurant uses your location to place your restaurant on the map and confirm your business address is within your selected delivery zone when you add or edit restaurant details.</string>
+        <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+        <string>Tangzo Restaurant uses your location to provide location-based restaurant services when required.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>Tangzo Restaurant uses the microphone when you record a video to send in chat or upload a restaurant story.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
