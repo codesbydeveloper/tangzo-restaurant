@@ -151,6 +151,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "728732933030-2sh3qoeoe0aqgl78i97hj1k6jib763hj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tangzo.restaurant",
+            "certificate_hash": "06d6060d9e1307264788db094d28267a74a9508f"
+          }
+        },
+        {
           "client_id": "728732933030-mh37sha745lfm027e4gt1h7pqgjuka3f.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
