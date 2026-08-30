@@ -10,6 +10,7 @@ plugins {
 
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file("local.properties")
+
 if (localPropertiesFile.exists()) {
     localPropertiesFile.withReader("UTF-8") { reader ->
         localProperties.load(reader)
@@ -17,18 +18,28 @@ if (localPropertiesFile.exists()) {
 }
 
 def flutterVersionCode = localProperties.getProperty("flutter.versionCode")
+
 if (flutterVersionCode == null) {
     flutterVersionCode = "1"
 }
 
 def flutterVersionName = localProperties.getProperty("flutter.versionName")
+
 if (flutterVersionName == null) {
     flutterVersionName = "1.0"
 }
 
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.tangzo.restaurant"
+
     compileSdk = 36
     ndkVersion = "29.0.14033849"
 
@@ -39,39 +50,62 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = "11" 
+        jvmTarget = "11"
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.tangzo.restaurant"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdk = 24
         targetSdk = 36
-        versionCode = 5
+        versionCode = 6
         versionName = flutterVersionName
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
-        // Ship only ARM ABIs — avoids non-16KB x86_64 libs from legacy payment SDKs
+
+
+        // Ship only ARM ABIs.
+        // This avoids non-16KB x86_64 native libraries.
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
         }
     }
 
-    buildTypes {
+
+    // ========================================================
+    // SIGNING CONFIGURATION
+    // ========================================================
+
+    signingConfigs {
+
         release {
-            minifyEnabled false  // Disable minification
-            shrinkResources false  // Disable shrinking resources
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            keyAlias keystoreProperties['keyAlias']
+
+            keyPassword keystoreProperties['keyPassword']
+
+            storeFile keystoreProperties['storeFile'] ?
+                    file(keystoreProperties['storeFile']) :
+                    null
+
+            storePassword keystoreProperties['storePassword']
+        }
+    }
+
+    buildTypes {
+
+        release {
+            minifyEnabled false
+            shrinkResources false
+
+            // IMPORTANT:
+            // Restaurant release APK/AAB uses the production
+            // Restaurant keystore instead of debug.keystore.
+            signingConfig signingConfigs.release
         }
     }
 
     packaging {
         jniLibs {
-            // Required for Google Play 16KB page size compliance
+            // Required for Google Play 16 KB page-size compliance
             useLegacyPackaging = false
         }
     }
@@ -86,8 +120,6 @@ android {
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
     implementation platform('com.google.firebase:firebase-bom:33.2.0')
-    // Legacy payment SDKs removed — Cashfree uses WebView/HTTP only.
-    // These bundled 4KB-aligned native libs (card.io, OpenCV) and failed Play 16KB checks.
     // implementation 'io.card:android-sdk:5.5.1'
     // implementation 'com.tencent.mm.opensdk:wechat-sdk-android-without-mta:6.7.0'
     // implementation 'com.google.android.gms:play-services-wallet:19.4.0'
