@@ -151,19 +151,19 @@
       },
       "oauth_client": [
         {
-          "client_id": "728732933030-2sh3qoeoe0aqgl78i97hj1k6jib763hj.apps.googleusercontent.com",
+          "client_id": "728732933030-154fqvbbq53l1qnmo40e2dv599qigo2g.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.tangzo.restaurant",
-            "certificate_hash": "06d6060d9e1307264788db094d28267a74a9508f"
+            "certificate_hash": "a0871433fdb464482bb49d163c84afd68245ad92"
           }
         },
         {
-          "client_id": "728732933030-mh37sha745lfm027e4gt1h7pqgjuka3f.apps.googleusercontent.com",
+          "client_id": "728732933030-avvtnk3d5siljb3k35l2v26olsulo285.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.tangzo.restaurant",
-            "certificate_hash": "b2edd3084f5bbd2b10cb061f812eb8dd929dc2f6"
+            "certificate_hash": "06d060d9e1307246788db09d4d2826a74a9508f5"
           }
         },
         {
@@ -180,14 +180,6 @@
           "android_info": {
             "package_name": "com.tangzo.restaurant",
             "certificate_hash": "fb2d9582ff55a8f9ca5d22cd20eca44bca48d42a"
-          }
-        },
-        {
-          "client_id": "728732933030-uf4bikdgvas8akul81h1mvhp9q3abub4.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.tangzo.restaurant",
-            "certificate_hash": "b1af3a0bf998aeede1a8716a539e5a59da1d86d6"
           }
         },
         {

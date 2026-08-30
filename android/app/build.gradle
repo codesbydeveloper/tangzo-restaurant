@@ -57,7 +57,7 @@ android {
         applicationId = "com.tangzo.restaurant"
         minSdk = 24
         targetSdk = 36
-        versionCode = 7
+        versionCode = 10
         versionName = flutterVersionName
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
