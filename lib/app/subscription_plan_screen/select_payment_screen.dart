@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +18,49 @@ class SelectPaymentScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeChange = Provider.of<DarkThemeProvider>(context);
+    if (Platform.isIOS) {
+      return Scaffold(
+        backgroundColor: themeChange.getThem() ? AppThemeData.surfaceDark : AppThemeData.surface,
+        appBar: AppBar(
+          backgroundColor: themeChange.getThem() ? AppThemeData.surfaceDark : AppThemeData.surface,
+          centerTitle: false,
+          titleSpacing: 0,
+          title: TranslatedText(
+            "Payment Option",
+            textAlign: TextAlign.start,
+            style: TextStyle(
+              fontFamily: AppThemeData.medium,
+              fontSize: 16,
+              color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+            ),
+          ),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TranslatedText(
+                'Paid subscriptions cannot be purchased in the iOS app. Please subscribe through our web portal.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: AppThemeData.regular,
+                  fontSize: 16,
+                  color: themeChange.getThem() ? AppThemeData.grey200 : AppThemeData.grey700,
+                ),
+              ),
+              const SizedBox(height: 24),
+              RoundedButtonFill(
+                title: 'Open Web Portal',
+                color: AppThemeData.secondary300,
+                textColor: AppThemeData.grey50,
+                onPress: () => Constant.showExternalSubscriptionPurchaseDialog(context),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return GetX(
       init: SubscriptionController(),
       builder: (controller) {

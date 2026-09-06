@@ -629,6 +629,13 @@ class SubscriptionController extends GetxController {
   }
 
   Future<void> setOrder() async {
+    final isFreePlan = selectedSubscriptionPlan.value.type == 'free' ||
+        selectedSubscriptionPlan.value.id == Constant.commissionSubscriptionID ||
+        selectedPaymentMethod.value == 'free';
+    if (Constant.blocksInAppSubscriptionPayment && !isFreePlan) {
+      ShowToastDialog.showToast('Paid subscriptions must be purchased through our web portal on iOS.');
+      return;
+    }
     ShowToastDialog.showLoader("Please wait");
     userModel.value.subscriptionPlanId = selectedSubscriptionPlan.value.id;
     userModel.value.subscriptionPlan = selectedSubscriptionPlan.value;
@@ -955,6 +962,10 @@ class SubscriptionController extends GetxController {
   }
 
   Future<void> cashFreeMakePayment({required BuildContext context, required String amount, required String paymentDesc}) async {
+    if (Constant.blocksInAppSubscriptionPayment) {
+      await Constant.showExternalSubscriptionPurchaseDialog(context);
+      return;
+    }
     ShowToastDialog.showLoader("Please wait");
     await CashfreeService()
         .createPaymentLink(cashfree: cashfreeModel.value, userModel: userModel.value, amount: double.parse(double.parse(amount).toStringAsFixed(2)), paymentDesc: paymentDesc)

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -67,6 +68,28 @@ class SubscriptionPlanScreen extends StatelessWidget {
                     const SizedBox(
                       height: 24,
                     ),
+                    if (Platform.isIOS)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey100,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppThemeData.secondary300.withValues(alpha: 0.4)),
+                          ),
+                          child: TranslatedText(
+                            'Paid plans must be purchased on our web portal. Free plans can be activated here.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: AppThemeData.medium,
+                              color: themeChange.getThem() ? AppThemeData.grey200 : AppThemeData.grey700,
+                            ),
+                          ),
+                        ),
+                      ),
                     controller.isLoading.value
                         ? Constant.loader()
                         : controller.subscriptionPlanList.isEmpty
@@ -89,6 +112,8 @@ class SubscriptionPlanScreen extends StatelessWidget {
                                         if (controller.selectedSubscriptionPlan.value.type == 'free' || controller.selectedSubscriptionPlan.value.id == Constant.commissionSubscriptionID) {
                                           controller.selectedPaymentMethod.value = 'free';
                                           controller.placeOrder();
+                                        } else if (Constant.blocksInAppSubscriptionPayment) {
+                                          Constant.showExternalSubscriptionPurchaseDialog(context);
                                         } else {
                                           Get.to(const SelectPaymentScreen());
                                         }
@@ -437,11 +462,11 @@ class SubscriptionPlanWidget extends StatelessWidget {
                           : themeChange.getThem()
                               ? AppThemeData.grey500
                               : AppThemeData.grey500,
-                      title: controller.userModel.value.subscriptionPlanId == subscriptionPlanModel.id
-                          ? "Renew".tr
-                          : controller.selectedSubscriptionPlan.value.id == subscriptionPlanModel.id
-                              ? "Active".tr
-                              : "Select Plan",
+                      title: _subscriptionButtonTitle(
+                        subscriptionPlanModel: subscriptionPlanModel,
+                        isCurrentPlan: controller.userModel.value.subscriptionPlanId == subscriptionPlanModel.id,
+                        isSelected: controller.selectedSubscriptionPlan.value.id == subscriptionPlanModel.id,
+                      ),
                       color: controller.selectedSubscriptionPlan.value.id == subscriptionPlanModel.id
                           ? AppThemeData.secondary300
                           : themeChange.getThem()
@@ -457,5 +482,26 @@ class SubscriptionPlanWidget extends StatelessWidget {
             ),
           );
         });
+  }
+
+  static bool _isPaidSubscriptionPlan(SubscriptionPlanModel plan) {
+    return plan.type != 'free' && plan.id != Constant.commissionSubscriptionID;
+  }
+
+  static String _subscriptionButtonTitle({
+    required SubscriptionPlanModel subscriptionPlanModel,
+    required bool isCurrentPlan,
+    required bool isSelected,
+  }) {
+    if (Constant.blocksInAppSubscriptionPayment && _isPaidSubscriptionPlan(subscriptionPlanModel)) {
+      return isCurrentPlan ? 'Renew on Web'.tr : 'Subscribe on Web'.tr;
+    }
+    if (isCurrentPlan) {
+      return 'Renew'.tr;
+    }
+    if (isSelected) {
+      return 'Active'.tr;
+    }
+    return 'Select Plan';
   }
 }
