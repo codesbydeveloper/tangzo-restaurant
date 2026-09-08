@@ -41,7 +41,7 @@ class SelectPaymentScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TranslatedText(
-                'Paid subscriptions cannot be purchased in the iOS app. Please subscribe through our web portal.',
+                'Paid subscriptions on iOS are purchased with Apple In-App Purchase.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: AppThemeData.regular,
@@ -50,11 +50,16 @@ class SelectPaymentScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              RoundedButtonFill(
-                title: 'Open Web Portal',
-                color: AppThemeData.secondary300,
-                textColor: AppThemeData.grey50,
-                onPress: () => Constant.showExternalSubscriptionPurchaseDialog(context),
+              GetX(
+                init: SubscriptionController(),
+                builder: (controller) {
+                  return RoundedButtonFill(
+                    title: 'Buy with Apple',
+                    color: AppThemeData.secondary300,
+                    textColor: AppThemeData.grey50,
+                    onPress: () => controller.buySelectedPlanWithAppleIap(),
+                  );
+                },
               ),
             ],
           ),

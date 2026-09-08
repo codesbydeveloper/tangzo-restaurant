@@ -80,7 +80,7 @@ class SubscriptionPlanScreen extends StatelessWidget {
                             border: Border.all(color: AppThemeData.secondary300.withValues(alpha: 0.4)),
                           ),
                           child: TranslatedText(
-                            'Paid plans must be purchased on our web portal. Free plans can be activated here.',
+                            'Paid plans are purchased securely through Apple In-App Purchase. Free plans can be activated here.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 14,
@@ -112,8 +112,8 @@ class SubscriptionPlanScreen extends StatelessWidget {
                                         if (controller.selectedSubscriptionPlan.value.type == 'free' || controller.selectedSubscriptionPlan.value.id == Constant.commissionSubscriptionID) {
                                           controller.selectedPaymentMethod.value = 'free';
                                           controller.placeOrder();
-                                        } else if (Constant.blocksInAppSubscriptionPayment) {
-                                          Constant.showExternalSubscriptionPurchaseDialog(context);
+                                        } else if (Constant.usesAppleInAppPurchase) {
+                                          controller.buySelectedPlanWithAppleIap();
                                         } else {
                                           Get.to(const SelectPaymentScreen());
                                         }
@@ -493,8 +493,8 @@ class SubscriptionPlanWidget extends StatelessWidget {
     required bool isCurrentPlan,
     required bool isSelected,
   }) {
-    if (Constant.blocksInAppSubscriptionPayment && _isPaidSubscriptionPlan(subscriptionPlanModel)) {
-      return isCurrentPlan ? 'Renew on Web'.tr : 'Subscribe on Web'.tr;
+    if (Constant.usesAppleInAppPurchase && _isPaidSubscriptionPlan(subscriptionPlanModel)) {
+      return isCurrentPlan ? 'Renew with Apple'.tr : 'Buy with Apple'.tr;
     }
     if (isCurrentPlan) {
       return 'Renew'.tr;

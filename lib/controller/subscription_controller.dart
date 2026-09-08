@@ -4,6 +4,7 @@ import 'package:restaurant/app/dash_board_screens/app_not_access_screen.dart';
 import 'package:restaurant/app/dash_board_screens/dash_board_screen.dart';
 import 'package:restaurant/constant/collection_name.dart';
 import 'package:restaurant/config/cashfree_credentials.dart';
+import 'package:restaurant/config/apple_iap_products.dart';
 import 'package:restaurant/controller/cashfree_service_controller.dart';
 import 'package:restaurant/controller/dash_board_controller.dart';
 import 'package:restaurant/controller/instamojo_service_controller.dart';
@@ -20,6 +21,7 @@ import 'package:restaurant/models/user_model.dart';
 import 'package:restaurant/models/vendor_model.dart';
 import 'package:restaurant/payment/mtn_momo_payment_screen.dart';
 import 'package:restaurant/payment/weburlservicescreen.dart';
+import 'package:restaurant/service/apple_iap_service.dart';
 import 'package:restaurant/utils/fire_store_utils.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -632,8 +634,11 @@ class SubscriptionController extends GetxController {
     final isFreePlan = selectedSubscriptionPlan.value.type == 'free' ||
         selectedSubscriptionPlan.value.id == Constant.commissionSubscriptionID ||
         selectedPaymentMethod.value == 'free';
-    if (Constant.blocksInAppSubscriptionPayment && !isFreePlan) {
-      ShowToastDialog.showToast('Paid subscriptions must be purchased through our web portal on iOS.');
+    final isAppleIap = selectedPaymentMethod.value == PaymentGateway.appleIap.name.toLowerCase() ||
+        selectedPaymentMethod.value == 'apple_iap' ||
+        selectedPaymentMethod.value == 'appleiap';
+    if (Constant.usesAppleInAppPurchase && !isFreePlan && !isAppleIap) {
+      ShowToastDialog.showToast('Paid subscriptions on iOS must be purchased with Apple In-App Purchase.');
       return;
     }
     ShowToastDialog.showLoader("Please wait");
@@ -961,9 +966,43 @@ class SubscriptionController extends GetxController {
     }
   }
 
+  Future<void> buySelectedPlanWithAppleIap() async {
+    if (!Platform.isIOS) {
+      ShowToastDialog.showToast('Apple In-App Purchase is only available on iOS.');
+      return;
+    }
+
+    final productId = AppleIapProducts.productIdForPlan(selectedSubscriptionPlan.value);
+    if (productId == null) {
+      ShowToastDialog.showToast(
+        'No Apple product is configured for "${selectedSubscriptionPlan.value.name ?? 'this plan'}". '
+        'Please contact support.',
+      );
+      return;
+    }
+
+    try {
+      ShowToastDialog.showLoader('Connecting to App Store...');
+      final purchase = await AppleIapService.instance.buy(productId);
+      await AppleIapService.instance.complete(purchase);
+      ShowToastDialog.closeLoader();
+      selectedPaymentMethod.value = PaymentGateway.appleIap.name.toLowerCase();
+      ShowToastDialog.showToast('Payment Successful!!');
+      await placeOrder();
+    } on AppleIapPurchaseException catch (e) {
+      ShowToastDialog.closeLoader();
+      if (!e.message.toLowerCase().contains('cancel')) {
+        ShowToastDialog.showToast(e.message);
+      }
+    } catch (e) {
+      ShowToastDialog.closeLoader();
+      ShowToastDialog.showToast(e.toString());
+    }
+  }
+
   Future<void> cashFreeMakePayment({required BuildContext context, required String amount, required String paymentDesc}) async {
-    if (Constant.blocksInAppSubscriptionPayment) {
-      await Constant.showExternalSubscriptionPurchaseDialog(context);
+    if (Constant.usesAppleInAppPurchase) {
+      await buySelectedPlanWithAppleIap();
       return;
     }
     ShowToastDialog.showLoader("Please wait");
@@ -1129,5 +1168,6 @@ enum PaymentGateway {
   cashfree,
   instamojo,
   foloosi,
-  paymongo
+  paymongo,
+  appleIap,
 }

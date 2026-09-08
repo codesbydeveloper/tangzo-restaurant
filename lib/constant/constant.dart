@@ -44,38 +44,8 @@ class Constant {
   static const globalUrl = "https://restaurant.tangzo.in/subscription-plan";
   static const commissionSubscriptionID = "J0RwvxCWhZzQQD7Kc2Ll";
 
-  /// Apple App Store Guideline 3.1.1 — paid subscriptions must not use third-party payment on iOS.
-  static bool get blocksInAppSubscriptionPayment => Platform.isIOS;
-
-  static Future<void> showExternalSubscriptionPurchaseDialog(BuildContext context) async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const TranslatedText('Subscribe on Web'),
-          content: const TranslatedText(
-            'Paid subscriptions cannot be purchased in the iOS app. Please subscribe through our web portal. Your account will update automatically once payment is complete.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const TranslatedText('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(dialogContext);
-                final uri = Uri.parse(globalUrl);
-                if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-                  ShowToastDialog.showToast('Could not open web portal.');
-                }
-              },
-              child: const TranslatedText('Open Web Portal'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  /// Paid subscriptions on iOS must use Apple In-App Purchase (Guideline 3.1.1).
+  static bool get usesAppleInAppPurchase => Platform.isIOS;
 
   static bool isZoneAvailable = false;
   static ZoneModel? selectedZone;
