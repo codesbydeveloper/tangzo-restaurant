@@ -44,9 +44,6 @@ class Constant {
   static const globalUrl = "https://restaurant.tangzo.in/subscription-plan";
   static const commissionSubscriptionID = "J0RwvxCWhZzQQD7Kc2Ll";
 
-  /// Paid subscriptions on iOS must use Apple In-App Purchase (Guideline 3.1.1).
-  static bool get usesAppleInAppPurchase => Platform.isIOS;
-
   static bool isZoneAvailable = false;
   static ZoneModel? selectedZone;
 

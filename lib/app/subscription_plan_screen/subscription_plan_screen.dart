@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import 'package:restaurant/app/subscription_plan_screen/select_payment_screen.dart';
 import 'package:restaurant/constant/constant.dart';
+import 'package:restaurant/constant/show_toast_dialog.dart';
 import 'package:restaurant/controller/subscription_controller.dart';
 import 'package:restaurant/models/subscription_plan_model.dart';
 import 'package:restaurant/themes/app_them_data.dart';
@@ -68,28 +67,6 @@ class SubscriptionPlanScreen extends StatelessWidget {
                     const SizedBox(
                       height: 24,
                     ),
-                    if (Platform.isIOS)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey100,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppThemeData.secondary300.withValues(alpha: 0.4)),
-                          ),
-                          child: TranslatedText(
-                            'Paid plans are purchased securely through Apple In-App Purchase. Free plans can be activated here.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: AppThemeData.medium,
-                              color: themeChange.getThem() ? AppThemeData.grey200 : AppThemeData.grey700,
-                            ),
-                          ),
-                        ),
-                      ),
                     controller.isLoading.value
                         ? Constant.loader()
                         : controller.subscriptionPlanList.isEmpty
@@ -109,13 +86,12 @@ class SubscriptionPlanScreen extends StatelessWidget {
                                     },
                                     onClick: () {
                                       if (controller.selectedSubscriptionPlan.value.id == subscriptionPlanModel.id) {
-                                        if (controller.selectedSubscriptionPlan.value.type == 'free' || controller.selectedSubscriptionPlan.value.id == Constant.commissionSubscriptionID) {
+                                        if (controller.selectedSubscriptionPlan.value.type == 'free' ||
+                                            controller.selectedSubscriptionPlan.value.id == Constant.commissionSubscriptionID) {
                                           controller.selectedPaymentMethod.value = 'free';
                                           controller.placeOrder();
-                                        } else if (Constant.usesAppleInAppPurchase) {
-                                          controller.buySelectedPlanWithAppleIap();
                                         } else {
-                                          Get.to(const SelectPaymentScreen());
+                                          ShowToastDialog.showToast('Only the free plan is available.');
                                         }
                                       }
                                     },
@@ -484,18 +460,11 @@ class SubscriptionPlanWidget extends StatelessWidget {
         });
   }
 
-  static bool _isPaidSubscriptionPlan(SubscriptionPlanModel plan) {
-    return plan.type != 'free' && plan.id != Constant.commissionSubscriptionID;
-  }
-
   static String _subscriptionButtonTitle({
     required SubscriptionPlanModel subscriptionPlanModel,
     required bool isCurrentPlan,
     required bool isSelected,
   }) {
-    if (Constant.usesAppleInAppPurchase && _isPaidSubscriptionPlan(subscriptionPlanModel)) {
-      return isCurrentPlan ? 'Renew with Apple'.tr : 'Buy with Apple'.tr;
-    }
     if (isCurrentPlan) {
       return 'Renew'.tr;
     }
