@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:restaurant/app/auth_screen/signup_screen.dart';
@@ -130,45 +128,48 @@ class PhoneNumberScreen extends StatelessWidget {
                 ],
               ),
             ),
-            bottomNavigationBar: Padding(
-              padding: EdgeInsets.symmetric(vertical: Platform.isAndroid ? 10 : 30),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ValueListenableBuilder(
-                      valueListenable: TranslationNotifier.refresh,
-                      builder: (_, __, ___) {
-                        return Text.rich(
+            bottomNavigationBar: SafeArea(
+              top: false,
+              minimum: const EdgeInsets.only(bottom: 8),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: ValueListenableBuilder(
+                  valueListenable: TranslationNotifier.refresh,
+                  builder: (_, __, ___) {
+                    return Text.rich(
+                      textAlign: TextAlign.center,
+                      TextSpan(
+                        children: [
                           TextSpan(
-                            children: [
-                              TextSpan(
-                                  text: 'Didn’t have an account?'.tr,
-                                  style: TextStyle(
-                                    color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                                    fontFamily: AppThemeData.medium,
-                                    fontWeight: FontWeight.w500,
-                                  )),
-                              const WidgetSpan(
-                                  child: SizedBox(
-                                width: 10,
-                              )),
-                              TextSpan(
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = () {
-                                      Get.to(const SignupScreen());
-                                    },
-                                  text: 'Sign up'.tr,
-                                  style: TextStyle(
-                                      color: AppThemeData.secondary300,
-                                      fontFamily: AppThemeData.bold,
-                                      fontWeight: FontWeight.w500,
-                                      decoration: TextDecoration.underline,
-                                      decorationColor: AppThemeData.secondary300)),
-                            ],
+                            text: 'Didn’t have an account?'.tr,
+                            style: TextStyle(
+                              color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                              fontFamily: AppThemeData.medium,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        );
-                      }),
-                ],
+                          const WidgetSpan(
+                            child: SizedBox(width: 10),
+                          ),
+                          TextSpan(
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                Get.to(const SignupScreen());
+                              },
+                            text: 'Sign up'.tr,
+                            style: TextStyle(
+                              color: AppThemeData.secondary300,
+                              fontFamily: AppThemeData.bold,
+                              fontWeight: FontWeight.w500,
+                              decoration: TextDecoration.underline,
+                              decorationColor: AppThemeData.secondary300,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           );
