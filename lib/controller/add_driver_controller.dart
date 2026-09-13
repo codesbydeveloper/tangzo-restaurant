@@ -63,7 +63,7 @@ class AddDriverController extends GetxController {
       if (driverModel.value.id != null && driverModel.value.id != '') {
         driverModel.value.firstName = firstNameEditingController.value.text.trim();
         driverModel.value.lastName = lastNameEditingController.value.text.trim();
-        driverModel.value.email = emailEditingController.value.text.trim();
+        driverModel.value.email = emailEditingController.value.text.trim().toLowerCase();
         driverModel.value.phoneNumber = phoneNUmberEditingController.value.text.trim();
         driverModel.value.countryCode = countryCodeEditingController.value.text.trim();
         driverModel.value.countryISOCode = countryISOCodeEditingController.value.text.trim();
@@ -77,7 +77,7 @@ class AddDriverController extends GetxController {
 
         FirebaseAuth secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
         final credential = await secondaryAuth.createUserWithEmailAndPassword(
-          email: emailEditingController.value.text.trim(),
+          email: emailEditingController.value.text.trim().toLowerCase(),
           password: passwordEditingController.value.text.trim(),
         );
         if (credential.user != null) {

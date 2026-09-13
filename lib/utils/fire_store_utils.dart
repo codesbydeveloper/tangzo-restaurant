@@ -1801,8 +1801,9 @@ class FireStoreUtils {
 
   static Future<UserModel?> getUserByEmail(String email) async {
     UserModel? userModel;
+    final normalizedEmail = email.trim().toLowerCase();
     try {
-      QuerySnapshot snapshot = await fireStore.collection(CollectionName.users).where('email', isEqualTo: email).limit(1).get();
+      QuerySnapshot snapshot = await fireStore.collection(CollectionName.users).where('email', isEqualTo: normalizedEmail).limit(1).get();
 
       if (snapshot.docs.isNotEmpty) {
         userModel = UserModel.fromJson(snapshot.docs.first.data() as Map<String, dynamic>);
@@ -1842,6 +1843,7 @@ class FireStoreUtils {
 
   static Future<UserModel?> getUserByEmailRole(String email) async {
     UserModel? userModel;
+    final normalizedEmail = email.trim().toLowerCase();
     try {
       QuerySnapshot snapshot = await fireStore
           .collection(CollectionName.users)
@@ -1849,7 +1851,7 @@ class FireStoreUtils {
             Constant.userRoleVendor,
             Constant.userRoleEmployee,
           ])
-          .where('email', isEqualTo: email)
+          .where('email', isEqualTo: normalizedEmail)
           .limit(1)
           .get();
 

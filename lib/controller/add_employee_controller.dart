@@ -77,7 +77,7 @@ class AddEmployeeController extends GetxController {
         employeeModel.value.firstName = firstNameEditingController.value.text.trim();
         employeeModel.value.lastName = lastNameEditingController.value.text.trim();
         employeeModel.value.employeePermissionId = selectEmployeeRole.value.id;
-        employeeModel.value.email = emailEditingController.value.text.trim();
+        employeeModel.value.email = emailEditingController.value.text.trim().toLowerCase();
         employeeModel.value.phoneNumber = phoneNUmberEditingController.value.text.trim();
         employeeModel.value.countryCode = countryCodeEditingController.value.text.trim();
         employeeModel.value.countryISOCode = countryISOCodeEditingController.value.text.trim();
@@ -90,7 +90,7 @@ class AddEmployeeController extends GetxController {
         FirebaseAuth secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
 
         final credential = await secondaryAuth.createUserWithEmailAndPassword(
-          email: emailEditingController.value.text.trim(),
+          email: emailEditingController.value.text.trim().toLowerCase(),
           password: passwordEditingController.value.text.trim(),
         );
 

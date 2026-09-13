@@ -53,6 +53,20 @@ class TextFieldWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeChange = Provider.of<DarkThemeProvider>(context);
+    final isEmailField = textInputType == TextInputType.emailAddress ||
+        (title ?? '').toLowerCase().contains('email') ||
+        hintText.toLowerCase().contains('email');
+    final List<TextInputFormatter> formatters = [
+      ...?inputFormatters,
+      if (isEmailField)
+        TextInputFormatter.withFunction((oldValue, newValue) {
+          return TextEditingValue(
+            text: newValue.text.toLowerCase(),
+            selection: newValue.selection,
+            composing: TextRange.empty,
+          );
+        }),
+    ];
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -78,12 +92,12 @@ class TextFieldWidget extends StatelessWidget {
                   readOnly: isReadyOnly ?? false,
                   onTap: onClick,
                   initialValue: initialValue,
-                  keyboardType: textInputType ?? TextInputType.text,
-                  textCapitalization: TextCapitalization.sentences,
+                  keyboardType: isEmailField ? TextInputType.emailAddress : (textInputType ?? TextInputType.text),
+                  textCapitalization: isEmailField ? TextCapitalization.none : TextCapitalization.sentences,
                   controller: controller,
                   maxLines: maxLine ?? 1,
                   textInputAction: textInputAction ?? TextInputAction.done,
-                  inputFormatters: inputFormatters,
+                  inputFormatters: formatters,
                   obscureText: obscureText ?? false,
                   obscuringCharacter: '●',
                   onChanged: onchange,
