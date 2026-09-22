@@ -29,7 +29,6 @@ import 'package:restaurant/models/mail_setting.dart';
 import 'package:restaurant/models/notification_model.dart';
 import 'package:restaurant/models/on_boarding_model.dart';
 import 'package:restaurant/models/order_model.dart';
-import 'package:restaurant/config/cashfree_credentials.dart';
 import 'package:restaurant/models/payment_model/cashfree_model.dart';
 import 'package:restaurant/models/payment_model/cod_setting_model.dart';
 import 'package:restaurant/models/payment_model/flutter_wave_model.dart';
@@ -503,14 +502,148 @@ class FireStoreUtils {
     return isUpdate;
   }
 
+  // static Future<void> restaurantVendorWalletSet(OrderModel orderModel) async {
+  //   double subTotal = 0.0;
+  //   double couponAmount = 0.0;
+  //   double specialDiscountAmount = 0.0;
+  //   double productTaxAmount = 0.0;
+  //   double orderTaxAmount = 0.0;
+  //   double packagingTaxAmount = 0.0;
+  //   double totalTaxAmount = 0.0;
+  //   double packagingCharge = 0.0;
+  //
+  //   /// ---------------- SUBTOTAL ----------------
+  //   for (var element in orderModel.products!) {
+  //     final double price = (double.parse(element.discountPrice.toString()) > 0) ? double.parse(element.discountPrice.toString()) : double.parse(element.price.toString());
+  //
+  //     final double qty = double.parse(element.quantity.toString());
+  //     final double extras = double.parse(element.extrasPrice.toString());
+  //
+  //     subTotal += (price * qty) + (extras * qty);
+  //   }
+  //
+  //   // SPECIAL DISCOUNT
+  //   if (orderModel.specialDiscount?['special_discount'] != null) {
+  //     specialDiscountAmount = double.tryParse(orderModel.specialDiscount!['special_discount'].toString()) ?? 0.0;
+  //   }
+  //
+  //   couponAmount = double.tryParse(orderModel.discount.toString()) ?? 0.0;
+  //   packagingCharge = double.tryParse(orderModel.vendor?.packagingCharge.toString() ?? '0') ?? 0.0;
+  //
+  //   final double totalDiscount = couponAmount + specialDiscountAmount;
+  //
+  //   /// ---------------- DISCOUNT RATIO ----------------
+  //   double discountRatio = 0.0;
+  //   if (subTotal > 0 && totalDiscount > 0) {
+  //     discountRatio = totalDiscount / subTotal;
+  //   }
+  //
+  //   if (orderModel.taxScope == "product") {
+  //     for (var element in orderModel.products!) {
+  //       final double price = (double.parse(element.discountPrice.toString()) > 0) ? double.parse(element.discountPrice.toString()) : double.parse(element.price.toString());
+  //
+  //       final double qty = double.parse(element.quantity.toString());
+  //       final double extras = double.parse(element.extrasPrice.toString());
+  //
+  //       final double itemAmount = (price * qty) + (extras * qty);
+  //
+  //       final double discountedItemAmount = itemAmount - (itemAmount * discountRatio);
+  //
+  //       for (var taxElement in element.taxSetting!) {
+  //         if (taxElement.type == "fix") {
+  //           productTaxAmount += Constant.calculateTax(
+  //                 amount: discountedItemAmount.toString(),
+  //                 taxModel: taxElement,
+  //               ) *
+  //               qty;
+  //         } else {
+  //           productTaxAmount += Constant.calculateTax(
+  //             amount: discountedItemAmount.toString(),
+  //             taxModel: taxElement,
+  //           );
+  //         }
+  //       }
+  //     }
+  //   }
+  //
+  //   // ORDER LEVEL TAX
+  //   if (orderModel.taxScope == "order") {
+  //     for (var taxElement in orderModel.taxSetting ?? []) {
+  //       orderTaxAmount += Constant.calculateTax(
+  //         amount: (subTotal - totalDiscount).toString(),
+  //         taxModel: taxElement,
+  //       );
+  //     }
+  //   }
+  //
+  //   // PACKAGING TAX
+  //   if (packagingCharge > 0) {
+  //     for (final tax in orderModel.packagingTax ?? []) {
+  //       packagingTaxAmount += Constant.calculateTax(
+  //         amount: packagingCharge.toString(),
+  //         taxModel: tax,
+  //       );
+  //     }
+  //   }
+  //
+  //   totalTaxAmount = productTaxAmount + orderTaxAmount + packagingTaxAmount;
+  //
+  //   // BASE PRICE AFTER COMMISSION
+  //   double basePrice;
+  //   final adminCommission = double.tryParse(orderModel.adminCommission ?? '0') ?? 0.0;
+  //
+  //   if (Constant.adminCommission?.isEnabled == true) {
+  //     basePrice = (subTotal / (1 + (adminCommission / 100))) - couponAmount - specialDiscountAmount + double.parse(orderModel.vendor?.packagingCharge ?? '0.0');
+  //   } else {
+  //     basePrice = subTotal - couponAmount - specialDiscountAmount + double.parse(orderModel.vendor?.packagingCharge ?? '0.0');
+  //   }
+  //
+  //   final vendorId = orderModel.vendor!.author;
+  //
+  //   // WALLET ENTRY – ORDER AMOUNT
+  //   final orderWalletTxn = WalletTransactionModel(
+  //     id: const Uuid().v4(),
+  //     orderId: orderModel.id,
+  //     userId: vendorId,
+  //     amount: basePrice,
+  //     date: Timestamp.now(),
+  //     isTopup: true,
+  //     note: "Order amount credited",
+  //     paymentMethod: "wallet",
+  //     paymentStatus: "success",
+  //     transactionUser: "vendor",
+  //   );
+  //
+  //   // WALLET ENTRY – TAX AMOUNT
+  //   final taxWalletTxn = WalletTransactionModel(
+  //     id: const Uuid().v4(),
+  //     orderId: orderModel.id,
+  //     userId: vendorId,
+  //     amount: totalTaxAmount,
+  //     date: Timestamp.now(),
+  //     isTopup: true,
+  //     note: "Order tax credited",
+  //     paymentMethod: "tax",
+  //     paymentStatus: "success",
+  //     transactionUser: "vendor",
+  //   );
+  //
+  //   final walletRef = fireStore.collection(CollectionName.wallet);
+  //
+  //   await Future.wait([
+  //     walletRef.doc(orderWalletTxn.id).set(orderWalletTxn.toJson()),
+  //     walletRef.doc(taxWalletTxn.id).set(taxWalletTxn.toJson()),
+  //   ]);
+  //   await updateUserWallet(
+  //     amount: (basePrice + totalTaxAmount).toString(),
+  //     userId: vendorId.toString(),
+  //   );
+  // }
+
   static Future<void> restaurantVendorWalletSet(OrderModel orderModel) async {
     double subTotal = 0.0;
     double couponAmount = 0.0;
     double specialDiscountAmount = 0.0;
-    double productTaxAmount = 0.0;
-    double orderTaxAmount = 0.0;
-    double packagingTaxAmount = 0.0;
-    double totalTaxAmount = 0.0;
     double packagingCharge = 0.0;
 
     /// ---------------- SUBTOTAL ----------------
@@ -531,112 +664,55 @@ class FireStoreUtils {
     couponAmount = double.tryParse(orderModel.discount.toString()) ?? 0.0;
     packagingCharge = double.tryParse(orderModel.vendor?.packagingCharge.toString() ?? '0') ?? 0.0;
 
-    final double totalDiscount = couponAmount + specialDiscountAmount;
+    // ---------------- NET FOOD SUBTOTAL ----------------
+    // Food value after coupon + special discount, before any tax.
+    final double netFoodSubtotal = subTotal - couponAmount - specialDiscountAmount;
 
-    /// ---------------- DISCOUNT RATIO ----------------
-    double discountRatio = 0.0;
-    if (subTotal > 0 && totalDiscount > 0) {
-      discountRatio = totalDiscount / subTotal;
-    }
-
-    if (orderModel.taxScope == "product") {
-      for (var element in orderModel.products!) {
-        final double price = (double.parse(element.discountPrice.toString()) > 0) ? double.parse(element.discountPrice.toString()) : double.parse(element.price.toString());
-
-        final double qty = double.parse(element.quantity.toString());
-        final double extras = double.parse(element.extrasPrice.toString());
-
-        final double itemAmount = (price * qty) + (extras * qty);
-
-        final double discountedItemAmount = itemAmount - (itemAmount * discountRatio);
-
-        for (var taxElement in element.taxSetting!) {
-          if (taxElement.type == "fix") {
-            productTaxAmount += Constant.calculateTax(
-                  amount: discountedItemAmount.toString(),
-                  taxModel: taxElement,
-                ) *
-                qty;
-          } else {
-            productTaxAmount += Constant.calculateTax(
-              amount: discountedItemAmount.toString(),
-              taxModel: taxElement,
-            );
-          }
-        }
-      }
-    }
-
-    // ORDER LEVEL TAX
-    if (orderModel.taxScope == "order") {
-      for (var taxElement in orderModel.taxSetting ?? []) {
-        orderTaxAmount += Constant.calculateTax(
-          amount: (subTotal - totalDiscount).toString(),
-          taxModel: taxElement,
-        );
-      }
-    }
-
-    // PACKAGING TAX
-    if (packagingCharge > 0) {
-      for (final tax in orderModel.packagingTax ?? []) {
-        packagingTaxAmount += Constant.calculateTax(
-          amount: packagingCharge.toString(),
-          taxModel: tax,
-        );
-      }
-    }
-
-    totalTaxAmount = productTaxAmount + orderTaxAmount + packagingTaxAmount;
-
-    // BASE PRICE AFTER COMMISSION
-    double basePrice;
-    final adminCommission = double.tryParse(orderModel.adminCommission ?? '0') ?? 0.0;
-
-    if (Constant.adminCommission?.isEnabled == true) {
-      basePrice = (subTotal / (1 + (adminCommission / 100))) - couponAmount - specialDiscountAmount + double.parse(orderModel.vendor?.packagingCharge ?? '0.0');
+    // ---------------- ADMIN COMMISSION AMOUNT ----------------
+    final double adminCommissionRaw = double.tryParse(orderModel.adminCommission ?? '0') ?? 0.0;
+    double adminCommissionAmount;
+    if (orderModel.adminCommissionType == "Percent") {
+      adminCommissionAmount = netFoodSubtotal * (adminCommissionRaw / 100);
     } else {
-      basePrice = subTotal - couponAmount - specialDiscountAmount + double.parse(orderModel.vendor?.packagingCharge ?? '0.0');
+      // Flat commission amount
+      adminCommissionAmount = adminCommissionRaw;
     }
+
+    // ---------------- COMMISSION TAX (18%) ----------------
+    final double commissionTaxAmount = adminCommissionAmount * 0.18;
+
+    // ---------------- TDS/TCS (1%) ----------------
+    final double tdsAmount = netFoodSubtotal * 0.01;
+
+    // ---------------- FINAL VENDOR PAYOUT ----------------
+    // Net food value + packaging charge, minus commission, minus 18% tax
+    // on that commission, minus 1% TDS/TCS. This is the ONLY amount that
+    // gets credited to the vendor -- no tax money of any kind is included.
+    final double finalVendorPayout = netFoodSubtotal + packagingCharge - adminCommissionAmount - commissionTaxAmount - tdsAmount;
 
     final vendorId = orderModel.vendor!.author;
 
-    // WALLET ENTRY – ORDER AMOUNT
+    // WALLET ENTRY -- FINAL NET PAYOUT ONLY.
+    // No separate tax transaction is created anymore -- zero tax money
+    // is ever credited to the vendor's wallet.
     final orderWalletTxn = WalletTransactionModel(
       id: const Uuid().v4(),
       orderId: orderModel.id,
       userId: vendorId,
-      amount: basePrice,
+      amount: finalVendorPayout,
       date: Timestamp.now(),
       isTopup: true,
-      note: "Order amount credited",
+      note: "Order payout (Comm, 18% Tax, & 1% TDS Deducted)",
       paymentMethod: "wallet",
-      paymentStatus: "success",
-      transactionUser: "vendor",
-    );
-
-    // WALLET ENTRY – TAX AMOUNT
-    final taxWalletTxn = WalletTransactionModel(
-      id: const Uuid().v4(),
-      orderId: orderModel.id,
-      userId: vendorId,
-      amount: totalTaxAmount,
-      date: Timestamp.now(),
-      isTopup: true,
-      note: "Order tax credited",
-      paymentMethod: "tax",
       paymentStatus: "success",
       transactionUser: "vendor",
     );
 
     final walletRef = fireStore.collection(CollectionName.wallet);
 
-    await Future.wait([
-      walletRef.doc(orderWalletTxn.id).set(orderWalletTxn.toJson()),
-      walletRef.doc(taxWalletTxn.id).set(taxWalletTxn.toJson()),
-    ]);
+    await walletRef.doc(orderWalletTxn.id).set(orderWalletTxn.toJson());
     await updateUserWallet(
-      amount: (basePrice + totalTaxAmount).toString(),
+      amount: finalVendorPayout.toString(),
       userId: vendorId.toString(),
     );
   }
@@ -875,22 +951,6 @@ class FireStoreUtils {
     await fireStore.collection(CollectionName.settings).doc("cashfree_settings").get().then((value) async {
       if (value.exists) {
         Cashfree cashfree = Cashfree.fromJson(value.data()!);
-        // Override with local Cashfree credentials (gitignored file)
-        cashfree.clientId = CashfreeCredentials.appId;
-        cashfree.clientSecret = CashfreeCredentials.secretKey;
-        cashfree.enable = true;
-        cashfree.isSandbox = CashfreeCredentials.isSandbox;
-        cashfree.name = cashfree.name?.isNotEmpty == true ? cashfree.name : "cashfree";
-        await Preferences.setString(Preferences.cashFreeSettings, jsonEncode(cashfree.toJson()));
-      } else {
-        // Fallback when cashfree_settings doc is missing in Firestore
-        final cashfree = Cashfree(
-          clientId: CashfreeCredentials.appId,
-          clientSecret: CashfreeCredentials.secretKey,
-          name: "cashfree",
-          enable: true,
-          isSandbox: CashfreeCredentials.isSandbox,
-        );
         await Preferences.setString(Preferences.cashFreeSettings, jsonEncode(cashfree.toJson()));
       }
     });

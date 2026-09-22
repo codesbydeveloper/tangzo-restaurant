@@ -44,5 +44,3 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Local secrets / payment credentials
-lib/config/cashfree_credentials.dart

@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:restaurant/app/dash_board_screens/app_not_access_screen.dart';
 import 'package:restaurant/app/dash_board_screens/dash_board_screen.dart';
 import 'package:restaurant/constant/collection_name.dart';
-import 'package:restaurant/config/cashfree_credentials.dart';
 import 'package:restaurant/controller/dash_board_controller.dart';
 import 'package:restaurant/controller/instamojo_service_controller.dart';
 import 'package:restaurant/controller/mtnmomo_controller.dart';
@@ -161,16 +160,6 @@ class SubscriptionController extends GetxController {
         if (cashFreePref.isNotEmpty) {
           cashfreeModel.value = Cashfree.fromJson(jsonDecode(cashFreePref));
         }
-
-        // Force Cashfree credentials from local config — only payment gateway in use
-        cashfreeModel.value = Cashfree(
-          clientId: CashfreeCredentials.appId,
-          clientSecret: CashfreeCredentials.secretKey,
-          name: "cashfree",
-          enable: true,
-          isSandbox: CashfreeCredentials.isSandbox,
-          image: cashfreeModel.value.image,
-        );
 
         walletSettingModel.value = WalletSettingModel.fromJson(jsonDecode(Preferences.getString(Preferences.walletSettings)));
         isLoadingPayment.value = false;
