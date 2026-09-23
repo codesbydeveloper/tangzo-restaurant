@@ -469,6 +469,30 @@ class OrderDetailsScreen extends StatelessWidget {
                                     amountColor: AppThemeData.primary300,
                                     isDark: themeChange.getThem(),
                                   ),
+
+                                  if (Constant.adminCommission?.isEnabled == true) ...[
+                                    const SizedBox(height: 10),
+                                    amountRow(
+                                      title: "Admin Commissions",
+                                      amount: "-${Constant.amountShow(amount: controller.adminComm.value.toString())}",
+                                      isDark: themeChange.getThem(),
+                                      amountColor: AppThemeData.danger300,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    amountRow(
+                                      title: "Admin Commission Tax",
+                                      amount: "-${Constant.amountShow(amount: controller.adminCommissionTax.value.toString())}",
+                                      isDark: themeChange.getThem(),
+                                      amountColor: AppThemeData.danger300,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    amountRow(
+                                      title: controller.hasGstNumber.value ? "TCS" : "TDS",
+                                      amount: "-${Constant.amountShow(amount: controller.tdsTcsAmount.value.toString())}",
+                                      isDark: themeChange.getThem(),
+                                      amountColor: AppThemeData.danger300,
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),

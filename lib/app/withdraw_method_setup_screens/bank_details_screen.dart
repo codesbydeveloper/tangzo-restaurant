@@ -55,10 +55,62 @@ class BankDetailsScreen extends StatelessWidget {
                       hintText: 'Enter Account Number',
                     ),
                     TextFieldWidget(
-                      title: 'Other Information',
+                      title: 'IFSC Code',
                       controller: controller.otherInfoController.value,
-                      hintText: 'Enter Other Information',
+                      hintText: 'Enter IFSC Code',
                     ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TranslatedText(
+                        'GST Available',
+                        style: TextStyle(
+                          color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                          fontSize: 14,
+                          fontFamily: AppThemeData.medium,
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RadioListTile<bool>(
+                            value: true,
+                            groupValue: controller.isGstAvailable.value,
+                            contentPadding: EdgeInsets.zero,
+                            title: const TranslatedText('Yes'),
+                            activeColor: AppThemeData.secondary300,
+                            onChanged: (value) {
+                              controller.isGstAvailable.value = value ?? false;
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: RadioListTile<bool>(
+                            value: false,
+                            groupValue: controller.isGstAvailable.value,
+                            contentPadding: EdgeInsets.zero,
+                            title: const TranslatedText('No'),
+                            activeColor: AppThemeData.secondary300,
+                            onChanged: (value) {
+                              controller.isGstAvailable.value = value ?? false;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (controller.isGstAvailable.value) ...[
+                      TextFieldWidget(
+                        title: 'GST Number',
+                        controller: controller.gstNumberController.value,
+                        hintText: 'Enter GST Number',
+                        textInputAction: TextInputAction.next,
+                      ),
+                      TextFieldWidget(
+                        title: 'PAN Number',
+                        controller: controller.panNumberController.value,
+                        hintText: 'Enter PAN Number',
+                      ),
+                    ],
                   ],
                 ),
               ),

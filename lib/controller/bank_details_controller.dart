@@ -14,6 +14,9 @@ class BankDetailsController extends GetxController {
   Rx<TextEditingController> holderNameController = TextEditingController().obs;
   Rx<TextEditingController> accountNoController = TextEditingController().obs;
   Rx<TextEditingController> otherInfoController = TextEditingController().obs;
+  Rx<TextEditingController> gstNumberController = TextEditingController().obs;
+  Rx<TextEditingController> panNumberController = TextEditingController().obs;
+  RxBool isGstAvailable = false.obs;
 
   Rx<UserModel> userModel = UserModel().obs;
 
@@ -25,6 +28,17 @@ class BankDetailsController extends GetxController {
   }
 
   Future<void> saveBank() async {
+    if (isGstAvailable.value) {
+      if (gstNumberController.value.text.trim().isEmpty) {
+        ShowToastDialog.showToast("Please enter GST Number");
+        return;
+      }
+      if (panNumberController.value.text.trim().isEmpty) {
+        ShowToastDialog.showToast("Please enter PAN Number");
+        return;
+      }
+    }
+
     ShowToastDialog.showLoader("Please wait");
     userModel.value.userBankDetails ??= UserBankDetails();
     userModel.value.userBankDetails!.accountNumber = accountNoController.value.text;
@@ -32,6 +46,9 @@ class BankDetailsController extends GetxController {
     userModel.value.userBankDetails!.branchName = branchNameController.value.text;
     userModel.value.userBankDetails!.holderName = holderNameController.value.text;
     userModel.value.userBankDetails!.otherDetails = otherInfoController.value.text;
+    userModel.value.userBankDetails!.isGstAvailable = isGstAvailable.value;
+    userModel.value.userBankDetails!.gstNumber = isGstAvailable.value ? gstNumberController.value.text.trim() : '';
+    userModel.value.userBankDetails!.panNumber = isGstAvailable.value ? panNumberController.value.text.trim() : '';
 
     await FireStoreUtils.updateUser(userModel.value).then(
       (value) {
@@ -59,6 +76,9 @@ class BankDetailsController extends GetxController {
             holderNameController.value.text = userModel.value.userBankDetails!.holderName.toString();
             accountNoController.value.text = userModel.value.userBankDetails!.accountNumber.toString();
             otherInfoController.value.text = userModel.value.userBankDetails!.otherDetails.toString();
+            isGstAvailable.value = userModel.value.userBankDetails!.isGstAvailable;
+            gstNumberController.value.text = userModel.value.userBankDetails!.gstNumber;
+            panNumberController.value.text = userModel.value.userBankDetails!.panNumber;
           }
         }
       },

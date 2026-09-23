@@ -11,6 +11,7 @@ import 'package:restaurant/models/cart_product_model.dart';
 import 'package:restaurant/models/order_model.dart';
 import 'package:restaurant/models/tax_model.dart';
 import 'package:restaurant/themes/app_them_data.dart';
+import 'package:restaurant/utils/fire_store_utils.dart';
 
 import 'package:restaurant/widget/translated_text.dart';
 
@@ -71,6 +72,9 @@ class OrderDetailsController extends GetxController {
   RxDouble totalTaxAmount = 0.0.obs;
 
   RxDouble adminComm = 0.0.obs;
+  RxDouble adminCommissionTax = 0.0.obs;
+  RxDouble tdsTcsAmount = 0.0.obs;
+  RxBool hasGstNumber = false.obs;
   RxDouble totalAmount = 0.0.obs;
   RxDouble subTotal = 0.0.obs;
   RxDouble totalRejectAmount = 0.0.obs;
@@ -206,6 +210,32 @@ class OrderDetailsController extends GetxController {
     totalAmount.value = (subTotal.value - totalDiscount) + totalTaxAmount.value + packagingCharge.value;
     totalRejectAmount.value =
         totalAmount.value + platformFee.value + platformTaxAmount.value + driverDeliveryTaxAmount.value + (orderModel.value.isFreeDelivery == false ? deliveryCharges.value + deliveryTips.value : 0);
+
+    /// ---------------- ADMIN COMMISSION ----------------
+    final double commissionRaw = double.tryParse(orderModel.value.adminCommission ?? '0') ?? 0.0;
+    if (orderModel.value.adminCommissionType == 'Percent') {
+      if (commissionRaw > 0) {
+        final double basePrice = subTotal.value / (1 + (commissionRaw / 100));
+        adminComm.value = subTotal.value - basePrice;
+      } else {
+        adminComm.value = 0.0;
+      }
+    } else {
+      adminComm.value = commissionRaw;
+    }
+
+    /// Admin Commission Tax from admin_commission taxes (excluding TCS/TDS)
+    adminCommissionTax.value = Constant.calculateAdminCommissionTax(adminComm.value);
+
+    /// TCS if GST exists, otherwise TDS, using tax collection rates on Total Amount
+    String gstNumber = Constant.userModel?.userBankDetails?.gstNumber.trim() ?? '';
+    if (gstNumber.isEmpty && orderModel.value.vendor?.author != null && orderModel.value.vendor!.author!.isNotEmpty) {
+      final owner = await FireStoreUtils.getUserProfile(orderModel.value.vendor!.author!);
+      gstNumber = owner?.userBankDetails?.gstNumber.trim() ?? '';
+    }
+    hasGstNumber.value = gstNumber.isNotEmpty;
+    tdsTcsAmount.value = Constant.calculateTdsOrTcs(totalAmount.value, hasGst: hasGstNumber.value);
+
     isLoading.value = false;
   }
 

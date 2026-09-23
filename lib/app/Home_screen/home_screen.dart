@@ -803,6 +803,60 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ],
                       ),
+                      const SizedBox(
+                        height: 5,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TranslatedText(
+                              "Admin Commission Tax",
+                              style: TextStyle(
+                                color: themeChange.getThem() ? AppThemeData.grey300 : AppThemeData.grey600,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                                fontFamily: AppThemeData.regular,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            "-${Constant.amountShow(amount: Constant.calculateAdminCommissionTax(adminCommission).toString())}",
+                            style: TextStyle(
+                              color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: AppThemeData.semiBold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(
+                        height: 5,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TranslatedText(
+                              (Constant.userModel?.userBankDetails?.gstNumber ?? '').trim().isNotEmpty ? "TCS" : "TDS",
+                              style: TextStyle(
+                                color: themeChange.getThem() ? AppThemeData.grey300 : AppThemeData.grey600,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                                fontFamily: AppThemeData.regular,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            "-${Constant.amountShow(amount: Constant.calculateTdsOrTcs(totalAmount, hasGst: (Constant.userModel?.userBankDetails?.gstNumber ?? '').trim().isNotEmpty).toString())}",
+                            style: TextStyle(
+                              color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: AppThemeData.semiBold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -1462,6 +1516,60 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ],
                       ),
+                      const SizedBox(
+                        height: 5,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TranslatedText(
+                              "Admin Commission Tax",
+                              style: TextStyle(
+                                color: themeChange.getThem() ? AppThemeData.grey300 : AppThemeData.grey600,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                                fontFamily: AppThemeData.regular,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            "-${Constant.amountShow(amount: Constant.calculateAdminCommissionTax(adminCommission).toString())}",
+                            style: TextStyle(
+                              color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: AppThemeData.semiBold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(
+                        height: 5,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TranslatedText(
+                              (Constant.userModel?.userBankDetails?.gstNumber ?? '').trim().isNotEmpty ? "TCS" : "TDS",
+                              style: TextStyle(
+                                color: themeChange.getThem() ? AppThemeData.grey300 : AppThemeData.grey600,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                                fontFamily: AppThemeData.regular,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            "-${Constant.amountShow(amount: Constant.calculateTdsOrTcs(totalAmount, hasGst: (Constant.userModel?.userBankDetails?.gstNumber ?? '').trim().isNotEmpty).toString())}",
+                            style: TextStyle(
+                              color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: AppThemeData.semiBold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -2031,6 +2139,60 @@ class HomeScreen extends StatelessWidget {
                           ),
                           Text(
                             "-${Constant.amountShow(amount: adminCommission.toString())}",
+                            style: TextStyle(
+                              color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: AppThemeData.semiBold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(
+                        height: 5,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TranslatedText(
+                              "Admin Commission Tax",
+                              style: TextStyle(
+                                color: themeChange.getThem() ? AppThemeData.grey300 : AppThemeData.grey600,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                                fontFamily: AppThemeData.regular,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            "-${Constant.amountShow(amount: Constant.calculateAdminCommissionTax(adminCommission).toString())}",
+                            style: TextStyle(
+                              color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: AppThemeData.semiBold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(
+                        height: 5,
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TranslatedText(
+                              (Constant.userModel?.userBankDetails?.gstNumber ?? '').trim().isNotEmpty ? "TCS" : "TDS",
+                              style: TextStyle(
+                                color: themeChange.getThem() ? AppThemeData.grey300 : AppThemeData.grey600,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                                fontFamily: AppThemeData.regular,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            "-${Constant.amountShow(amount: Constant.calculateTdsOrTcs(totalAmount, hasGst: (Constant.userModel?.userBankDetails?.gstNumber ?? '').trim().isNotEmpty).toString())}",
                             style: TextStyle(
                               color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
                               fontSize: 16,

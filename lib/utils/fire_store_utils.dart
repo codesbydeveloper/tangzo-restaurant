@@ -363,6 +363,10 @@ class FireStoreUtils {
           Constant.openAIStatus = event.data()!["status"];
         }
       });
+
+      await fireStore.collection(CollectionName.tax).where('enable', isEqualTo: true).where('scope', isEqualTo: 'admin_commission').get().then((value) {
+        Constant.adminCommissionTaxList = value.docs.map((doc) => TaxModel.fromJson(doc.data())).toList();
+      });
     } catch (e) {
       log(e.toString());
     }
@@ -678,11 +682,17 @@ class FireStoreUtils {
       adminCommissionAmount = adminCommissionRaw;
     }
 
-    // ---------------- COMMISSION TAX (18%) ----------------
-    final double commissionTaxAmount = adminCommissionAmount * 0.18;
+    // ---------------- COMMISSION TAX (from admin_commission taxes, excluding TCS/TDS) ----------------
+    final double commissionTaxAmount = Constant.calculateAdminCommissionTax(adminCommissionAmount);
 
-    // ---------------- TDS/TCS (1%) ----------------
-    final double tdsAmount = netFoodSubtotal * 0.01;
+    // ---------------- TDS/TCS (from tax collection, on net food subtotal + tax + packaging = order total) ----------------
+    String gstNumber = '';
+    if (orderModel.vendor?.author != null && orderModel.vendor!.author!.isNotEmpty) {
+      final owner = await getUserProfile(orderModel.vendor!.author!);
+      gstNumber = owner?.userBankDetails?.gstNumber.trim() ?? '';
+    }
+    final double orderTotal = netFoodSubtotal + packagingCharge;
+    final double tdsAmount = Constant.calculateTdsOrTcs(orderTotal, hasGst: gstNumber.isNotEmpty);
 
     // ---------------- FINAL VENDOR PAYOUT ----------------
     // Net food value + packaging charge, minus commission, minus 18% tax
@@ -702,7 +712,7 @@ class FireStoreUtils {
       amount: finalVendorPayout,
       date: Timestamp.now(),
       isTopup: true,
-      note: "Order payout (Comm, 18% Tax, & 1% TDS Deducted)",
+      note: "Order amount credited",
       paymentMethod: "wallet",
       paymentStatus: "success",
       transactionUser: "vendor",

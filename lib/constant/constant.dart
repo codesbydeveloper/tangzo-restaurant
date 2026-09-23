@@ -71,6 +71,7 @@ class Constant {
 
   static String? taxScope = "";
   static List<TaxModel>? taxProductList = [];
+  static List<TaxModel> adminCommissionTaxList = [];
 
   static bool? storyEnable = true;
   static bool? openAIStatus = false;
@@ -227,6 +228,33 @@ class Constant {
       }
     }
     return taxAmount;
+  }
+
+  static bool _isTcsTax(TaxModel tax) => (tax.title ?? '').toLowerCase().trim() == 'tcs';
+
+  static bool _isTdsTax(TaxModel tax) => (tax.title ?? '').toLowerCase().trim() == 'tds';
+
+  static List<TaxModel> get enabledAdminCommissionTaxes {
+    return adminCommissionTaxList.where((tax) => tax.enable == true).toList();
+  }
+
+  static double calculateAdminCommissionTax(double adminCommissionAmount) {
+    double amount = 0.0;
+    for (final tax in enabledAdminCommissionTaxes) {
+      if (_isTcsTax(tax) || _isTdsTax(tax)) continue;
+      amount += calculateTax(amount: adminCommissionAmount.toString(), taxModel: tax);
+    }
+    return amount;
+  }
+
+  static double calculateTdsOrTcs(double totalAmount, {required bool hasGst}) {
+    final requiredTitle = hasGst ? 'tcs' : 'tds';
+    for (final tax in enabledAdminCommissionTaxes) {
+      if ((tax.title ?? '').toLowerCase().trim() == requiredTitle) {
+        return calculateTax(amount: totalAmount.toString(), taxModel: tax);
+      }
+    }
+    return 0.0;
   }
 
   static double calculateDiscount({String? amount, CouponModel? offerModel}) {

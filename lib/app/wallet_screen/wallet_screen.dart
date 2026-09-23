@@ -115,32 +115,32 @@ class WalletScreen extends StatelessWidget {
                                         ],
                                       ),
                                     ),
-                                    Expanded(
-                                      child: Column(
-                                        children: [
-                                          TranslatedText(
-                                            "Total Tax.",
-                                            maxLines: 1,
-                                            style: TextStyle(
-                                              color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey900,
-                                              fontSize: 14,
-                                              overflow: TextOverflow.ellipsis,
-                                              fontFamily: AppThemeData.regular,
-                                            ),
-                                          ),
-                                          Text(
-                                            Constant.amountShow(amount: controller.taxAmount.value.toString()),
-                                            maxLines: 1,
-                                            style: TextStyle(
-                                              color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey900,
-                                              fontSize: 18,
-                                              overflow: TextOverflow.ellipsis,
-                                              fontFamily: AppThemeData.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
+                                    // Expanded(
+                                      // child: Column(
+                                      //   children: [
+                                      //     TranslatedText(
+                                      //       "Total Tax Amount.",
+                                      //       maxLines: 1,
+                                      //       style: TextStyle(
+                                      //         color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey900,
+                                      //         fontSize: 14,
+                                      //         overflow: TextOverflow.ellipsis,
+                                      //         fontFamily: AppThemeData.regular,
+                                      //       ),
+                                      //     ),
+                                      //     Text(
+                                      //       Constant.amountShow(amount: controller.taxAmount.value.toString()),
+                                      //       maxLines: 1,
+                                      //       style: TextStyle(
+                                      //         color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey900,
+                                      //         fontSize: 18,
+                                      //         overflow: TextOverflow.ellipsis,
+                                      //         fontFamily: AppThemeData.bold,
+                                      //       ),
+                                      //     ),
+                                      //   ],
+                                      // ),
+                                    // )
                                   ],
                                 ),
                                 const SizedBox(

@@ -242,6 +242,9 @@ class UserBankDetails {
   String holderName;
   String accountNumber;
   String otherDetails;
+  bool isGstAvailable;
+  String gstNumber;
+  String panNumber;
 
   UserBankDetails({
     this.bankName = '',
@@ -249,6 +252,9 @@ class UserBankDetails {
     this.branchName = '',
     this.accountNumber = '',
     this.holderName = '',
+    this.isGstAvailable = false,
+    this.gstNumber = '',
+    this.panNumber = '',
   });
 
   factory UserBankDetails.fromJson(Map<String, dynamic> parsedJson) {
@@ -258,6 +264,9 @@ class UserBankDetails {
       holderName: parsedJson['holderName'] ?? '',
       accountNumber: parsedJson['accountNumber'] ?? '',
       otherDetails: parsedJson['otherDetails'] ?? '',
+      isGstAvailable: parsedJson['isGstAvailable'] ?? false,
+      gstNumber: parsedJson['gstNumber'] ?? '',
+      panNumber: parsedJson['panNumber'] ?? '',
     );
   }
 
@@ -268,6 +277,9 @@ class UserBankDetails {
       'holderName': holderName,
       'accountNumber': accountNumber,
       'otherDetails': otherDetails,
+      'isGstAvailable': isGstAvailable,
+      'gstNumber': gstNumber,
+      'panNumber': panNumber,
     };
   }
 }
