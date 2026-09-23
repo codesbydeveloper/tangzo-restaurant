@@ -2,14 +2,12 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart' hide Constant;
 import 'package:restaurant/app/auth_screen/login_screen.dart';
-import 'package:restaurant/app/dash_board_screens/app_not_access_screen.dart';
-import 'package:restaurant/app/dash_board_screens/dash_board_screen.dart';
-import 'package:restaurant/app/subscription_plan_screen/subscription_plan_screen.dart';
 import 'package:restaurant/constant/constant.dart';
 import 'package:restaurant/constant/show_toast_dialog.dart';
 import 'package:restaurant/models/user_model.dart';
 import 'package:restaurant/utils/fire_store_utils.dart';
 import 'package:restaurant/utils/notification_service.dart';
+import 'package:restaurant/utils/vendor_navigation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -82,32 +80,7 @@ class SignupController extends GetxController {
       await FireStoreUtils.updateUser(userModel.value).then(
         (value) async {
           if (Constant.autoApproveRestaurant == true) {
-            bool isPlanExpire = false;
-            if (userModel.value.subscriptionPlan?.id != null) {
-              if (userModel.value.subscriptionExpiryDate == null) {
-                if (userModel.value.subscriptionPlan?.expiryDay == '-1') {
-                  isPlanExpire = false;
-                } else {
-                  isPlanExpire = true;
-                }
-              } else {
-                DateTime expiryDate = userModel.value.subscriptionExpiryDate!.toDate();
-                isPlanExpire = expiryDate.isBefore(DateTime.now());
-              }
-            } else {
-              isPlanExpire = true;
-            }
-            if (userModel.value.subscriptionPlanId == null || isPlanExpire == true) {
-              if (Constant.adminCommission?.isEnabled == false && Constant.isSubscriptionModelApplied == false) {
-                Get.offAll(const DashBoardScreen());
-              } else {
-                Get.offAll(const SubscriptionPlanScreen());
-              }
-            } else if (userModel.value.subscriptionPlan?.features?.restaurantMobileApp != false || userModel.value.subscriptionPlan?.type == 'free') {
-              Get.offAll(const DashBoardScreen());
-            } else {
-              Get.offAll(const AppNotAccessScreen());
-            }
+            VendorNavigation.goAfterAuth(userModel.value);
           } else {
             ShowToastDialog.showToast("Thank you for sign up, your application is under approval so please wait till that approve.");
             Get.offAll(const LoginScreen());
@@ -140,32 +113,7 @@ class SignupController extends GetxController {
           await FireStoreUtils.updateUser(userModel.value).then(
             (value) async {
               if (Constant.autoApproveRestaurant == true) {
-                bool isPlanExpire = false;
-                if (userModel.value.subscriptionPlan?.id != null) {
-                  if (userModel.value.subscriptionExpiryDate == null) {
-                    if (userModel.value.subscriptionPlan?.expiryDay == '-1') {
-                      isPlanExpire = false;
-                    } else {
-                      isPlanExpire = true;
-                    }
-                  } else {
-                    DateTime expiryDate = userModel.value.subscriptionExpiryDate!.toDate();
-                    isPlanExpire = expiryDate.isBefore(DateTime.now());
-                  }
-                } else {
-                  isPlanExpire = true;
-                }
-                if (userModel.value.subscriptionPlanId == null || isPlanExpire == true) {
-                  if (Constant.adminCommission?.isEnabled == false && Constant.isSubscriptionModelApplied == false) {
-                    Get.offAll(const DashBoardScreen());
-                  } else {
-                    Get.offAll(const SubscriptionPlanScreen());
-                  }
-                } else if (userModel.value.subscriptionPlan?.features?.restaurantMobileApp != false || userModel.value.subscriptionPlan?.type == 'free') {
-                  Get.offAll(const DashBoardScreen());
-                } else {
-                  Get.offAll(const AppNotAccessScreen());
-                }
+                VendorNavigation.goAfterAuth(userModel.value);
               } else {
                 ShowToastDialog.showToast("Thank you for sign up, your application is under approval so please wait till that approve.");
                 Get.offAll(const LoginScreen());

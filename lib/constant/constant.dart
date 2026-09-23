@@ -486,17 +486,32 @@ class Constant {
   static final smtpServer = SmtpServer(mailSettings!.host.toString(),
       username: mailSettings!.userName.toString(), password: mailSettings!.password.toString(), port: 465, ignoreBadCertificate: false, ssl: true, allowInsecure: true);
 
-  static Future<void> sendMail({String? subject, String? body, bool? isAdmin = false, List<dynamic>? recipients}) async {
-    // Create our message.
+  static Future<void> sendMail({
+    String? subject,
+    String? body,
+    bool? isAdmin = false,
+    List<dynamic>? recipients,
+    List<File>? attachments,
+    String? attachmentName,
+  }) async {
+    if (mailSettings == null || recipients == null) {
+      throw Exception('Mail settings are not configured.');
+    }
     if (isAdmin == true) {
-      recipients!.add(mailSettings!.userName.toString());
+      recipients.add(mailSettings!.userName.toString());
     }
     final message = Message()
       ..from = Address(mailSettings!.userName.toString(), mailSettings!.fromName.toString())
-      ..recipients = recipients!
+      ..recipients = recipients
       ..subject = subject
       ..text = body
       ..html = body;
+
+    if (attachments != null) {
+      for (final file in attachments) {
+        message.attachments.add(FileAttachment(file)..fileName = attachmentName ?? file.uri.pathSegments.last);
+      }
+    }
 
     try {
       final sendReport = await send(message, smtpServer);

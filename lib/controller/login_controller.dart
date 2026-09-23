@@ -4,13 +4,13 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:restaurant/app/auth_screen/signup_screen.dart';
 import 'package:restaurant/app/dash_board_screens/app_not_access_screen.dart';
 import 'package:restaurant/app/dash_board_screens/dash_board_screen.dart';
-import 'package:restaurant/app/subscription_plan_screen/subscription_plan_screen.dart';
 import 'package:restaurant/constant/constant.dart';
 import 'package:restaurant/constant/show_toast_dialog.dart';
 import 'package:restaurant/models/user_model.dart';
 import 'package:restaurant/models/vendor_model.dart';
 import 'package:restaurant/utils/fire_store_utils.dart';
 import 'package:restaurant/utils/notification_service.dart';
+import 'package:restaurant/utils/vendor_navigation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
@@ -53,32 +53,7 @@ class LoginController extends GetxController {
           if (userModel.active == true) {
             userModel.fcmToken = await NotificationService.getToken();
             await FireStoreUtils.updateUser(userModel);
-            bool isPlanExpire = false;
-            if (userModel.subscriptionPlan?.id != null) {
-              if (userModel.subscriptionExpiryDate == null) {
-                if (userModel.subscriptionPlan?.expiryDay == '-1') {
-                  isPlanExpire = false;
-                } else {
-                  isPlanExpire = true;
-                }
-              } else {
-                DateTime expiryDate = userModel.subscriptionExpiryDate!.toDate();
-                isPlanExpire = expiryDate.isBefore(DateTime.now());
-              }
-            } else {
-              isPlanExpire = true;
-            }
-            if (userModel.subscriptionPlanId == null || isPlanExpire == true) {
-              if (Constant.adminCommission?.isEnabled == false && Constant.isSubscriptionModelApplied == false) {
-                Get.offAll(const DashBoardScreen());
-              } else {
-                Get.offAll(const SubscriptionPlanScreen());
-              }
-            } else if (userModel.subscriptionPlan?.features?.restaurantMobileApp == true) {
-              Get.offAll(const DashBoardScreen());
-            } else {
-              Get.offAll(const AppNotAccessScreen());
-            }
+            VendorNavigation.goAfterAuth(userModel);
           } else {
             await FirebaseAuth.instance.signOut();
             ShowToastDialog.showToast("This user is disable please contact to administrator");
@@ -153,27 +128,7 @@ class LoginController extends GetxController {
   }
 
   Future<void> _navigateVendorAfterLogin(UserModel userModel) async {
-    bool isPlanExpire = false;
-    if (userModel.subscriptionPlan?.id != null) {
-      if (userModel.subscriptionExpiryDate == null) {
-        isPlanExpire = userModel.subscriptionPlan?.expiryDay != '-1';
-      } else {
-        isPlanExpire = userModel.subscriptionExpiryDate!.toDate().isBefore(DateTime.now());
-      }
-    } else {
-      isPlanExpire = true;
-    }
-    if (userModel.subscriptionPlanId == null || isPlanExpire == true) {
-      if (Constant.adminCommission?.isEnabled == false && Constant.isSubscriptionModelApplied == false) {
-        Get.offAll(const DashBoardScreen());
-      } else {
-        Get.offAll(const SubscriptionPlanScreen());
-      }
-    } else if (userModel.subscriptionPlan?.features?.restaurantMobileApp == true) {
-      Get.offAll(const DashBoardScreen());
-    } else {
-      Get.offAll(const AppNotAccessScreen());
-    }
+    VendorNavigation.goAfterAuth(userModel);
   }
 
   Future<void> loginWithApple() async {
@@ -206,32 +161,7 @@ class LoginController extends GetxController {
                 if (userModel.active == true) {
                   userModel.fcmToken = await NotificationService.getToken();
                   await FireStoreUtils.updateUser(userModel);
-                  bool isPlanExpire = false;
-                  if (userModel.subscriptionPlan?.id != null) {
-                    if (userModel.subscriptionExpiryDate == null) {
-                      if (userModel.subscriptionPlan?.expiryDay == '-1') {
-                        isPlanExpire = false;
-                      } else {
-                        isPlanExpire = true;
-                      }
-                    } else {
-                      DateTime expiryDate = userModel.subscriptionExpiryDate!.toDate();
-                      isPlanExpire = expiryDate.isBefore(DateTime.now());
-                    }
-                  } else {
-                    isPlanExpire = true;
-                  }
-                  if (userModel.subscriptionPlanId == null || isPlanExpire == true) {
-                    if (Constant.adminCommission?.isEnabled == false && Constant.isSubscriptionModelApplied == false) {
-                      Get.offAll(const DashBoardScreen());
-                    } else {
-                      Get.offAll(const SubscriptionPlanScreen());
-                    }
-                  } else if (userModel.subscriptionPlan?.features?.restaurantMobileApp == true) {
-                    Get.offAll(const DashBoardScreen());
-                  } else {
-                    Get.offAll(const AppNotAccessScreen());
-                  }
+                  VendorNavigation.goAfterAuth(userModel);
                 } else {
                   await FirebaseAuth.instance.signOut();
                   ShowToastDialog.showToast("This user is disable please contact to administrator");

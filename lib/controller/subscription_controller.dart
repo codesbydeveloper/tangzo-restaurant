@@ -1,7 +1,5 @@
 // import 'package:foloosi_plugins/foloosi_plugins.dart';
 import 'package:get/get.dart';
-import 'package:restaurant/app/dash_board_screens/app_not_access_screen.dart';
-import 'package:restaurant/app/dash_board_screens/dash_board_screen.dart';
 import 'package:restaurant/constant/collection_name.dart';
 import 'package:restaurant/controller/dash_board_controller.dart';
 import 'package:restaurant/controller/instamojo_service_controller.dart';
@@ -19,6 +17,7 @@ import 'package:restaurant/models/vendor_model.dart';
 import 'package:restaurant/payment/mtn_momo_payment_screen.dart';
 import 'package:restaurant/payment/weburlservicescreen.dart';
 import 'package:restaurant/utils/fire_store_utils.dart';
+import 'package:restaurant/utils/vendor_navigation.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Constant;
@@ -692,16 +691,11 @@ class SubscriptionController extends GetxController {
     await FireStoreUtils.updateUser(userModel.value).then(
       (value) async {
         ShowToastDialog.closeLoader();
-        if (userModel.value.subscriptionPlan!.features?.restaurantMobileApp == true) {
-          dynamic argumentData = Get.arguments;
-          if (argumentData == null) {
-            Get.offAll(const DashBoardScreen());
-          } else {
-            Get.back(result: true);
-          }
+        dynamic argumentData = Get.arguments;
+        final isFromProfile = argumentData != null;
+        VendorNavigation.goAfterPlan(userModel.value, isFromProfile: isFromProfile);
+        if (userModel.value.subscriptionPlan?.features?.restaurantMobileApp == true) {
           ShowToastDialog.showToast("Success! You’ve unlocked your subscription benefits starting today.");
-        } else {
-          Get.offAll(const AppNotAccessScreen());
         }
       },
     );

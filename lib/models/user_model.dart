@@ -36,6 +36,8 @@ class UserModel {
   SubscriptionPlanModel? subscriptionPlan;
   String? employeePermissionId;
   bool? isAutoVerify;
+  bool? isTermsAccepted;
+  Timestamp? termsAcceptedAt;
 
   UserModel(
       {this.id,
@@ -69,7 +71,9 @@ class UserModel {
       this.subscriptionExpiryDate,
       this.subscriptionPlan,
       this.employeePermissionId,
-      this.isAutoVerify});
+      this.isAutoVerify,
+      this.isTermsAccepted,
+      this.termsAcceptedAt});
 
   String fullName() {
     return "${firstName ?? ''} ${lastName ?? ''}";
@@ -114,6 +118,8 @@ class UserModel {
     subscriptionPlan = json['subscription_plan'] != null ? SubscriptionPlanModel.fromJson(json['subscription_plan']) : null;
     employeePermissionId = json['employeePermissionId'];
     isAutoVerify = json['isAutoVerify'];
+    isTermsAccepted = json['isTermsAccepted'] ?? false;
+    termsAcceptedAt = json['termsAcceptedAt'];
   }
 
   Map<String, dynamic> toJson() {
@@ -165,6 +171,8 @@ class UserModel {
     data['appIdentifier'] = appIdentifier;
     data['provider'] = provider;
     data['isAutoVerify'] = isAutoVerify;
+    data['isTermsAccepted'] = isTermsAccepted ?? false;
+    data['termsAcceptedAt'] = termsAcceptedAt;
     return data;
   }
 }
