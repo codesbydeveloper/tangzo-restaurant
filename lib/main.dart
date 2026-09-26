@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:restaurant/app/splash_screen.dart';
@@ -12,6 +11,7 @@ import 'package:restaurant/firebase_options.dart';
 import 'package:restaurant/models/language_model.dart';
 import 'package:restaurant/service/audio_player_service.dart';
 import 'package:restaurant/service/localization_service.dart';
+import 'package:restaurant/themes/safe_bottom_app_builder.dart';
 import 'package:restaurant/themes/styles.dart';
 import 'package:restaurant/utils/dark_theme_provider.dart';
 import 'package:restaurant/utils/dynamic_traslator.dart';
@@ -96,7 +96,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             locale: LocalizationService.locale,
             fallbackLocale: LocalizationService.locale,
             translations: LocalizationService(),
-            builder: EasyLoading.init(),
+            builder: safeBottomAppBuilder(),
             home: GetBuilder<GlobalSettingController>(
               init: GlobalSettingController(),
               builder: (context) {
