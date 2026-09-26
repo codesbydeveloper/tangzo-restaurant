@@ -465,7 +465,7 @@ class OrderDetailsScreen extends StatelessWidget {
                                   /// To Pay
                                   amountRow(
                                     title: "To Pay",
-                                    amount: Constant.amountShow(amount: controller.totalAmount.value.toString()),
+                                    amount: Constant.amountShow(amount: controller.totalAmount.value.toString(), decimalDigits: 3),
                                     amountColor: AppThemeData.primary300,
                                     isDark: themeChange.getThem(),
                                   ),
@@ -474,21 +474,21 @@ class OrderDetailsScreen extends StatelessWidget {
                                     const SizedBox(height: 10),
                                     amountRow(
                                       title: "Admin Commissions",
-                                      amount: "-${Constant.amountShow(amount: controller.adminComm.value.toString())}",
+                                      amount: "-${Constant.amountShow(amount: controller.adminComm.value.toString(), decimalDigits: 3)}",
                                       isDark: themeChange.getThem(),
                                       amountColor: AppThemeData.danger300,
                                     ),
                                     const SizedBox(height: 10),
                                     amountRow(
                                       title: "Admin Commission Tax",
-                                      amount: "-${Constant.amountShow(amount: controller.adminCommissionTax.value.toString())}",
+                                      amount: "-${Constant.amountShow(amount: controller.adminCommissionTax.value.toString(), decimalDigits: 3)}",
                                       isDark: themeChange.getThem(),
                                       amountColor: AppThemeData.danger300,
                                     ),
                                     const SizedBox(height: 10),
                                     amountRow(
                                       title: controller.hasGstNumber.value ? "TCS" : "TDS",
-                                      amount: "-${Constant.amountShow(amount: controller.tdsTcsAmount.value.toString())}",
+                                      amount: "-${Constant.amountShow(amount: controller.tdsTcsAmount.value.toString(), decimalDigits: 3)}",
                                       isDark: themeChange.getThem(),
                                       amountColor: AppThemeData.danger300,
                                     ),

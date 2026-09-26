@@ -460,7 +460,7 @@ class HomeScreen extends StatelessWidget {
     totalTaxAmount = productTaxAmount + orderTaxAmount + packagingTaxAmount;
 
     /// ---------------- FINAL TOTAL ----------------
-    totalAmount = (subTotal - totalDiscount) + totalTaxAmount + packagingCharge;
+    totalAmount = (subTotal - totalDiscount) + packagingCharge;
 
     if (orderModel.paymentMethod!.toLowerCase() != 'cod') {
       if (orderModel.isFreeDelivery == true) {
@@ -762,7 +762,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      Constant.amountShow(amount: totalAmount.toString()),
+                      Constant.amountShow(amount: totalAmount.toString(), decimalDigits: 3),
                       style: TextStyle(
                         color: themeChange.getThem() ? AppThemeData.grey100 : AppThemeData.grey800,
                         fontSize: 16,
@@ -793,7 +793,7 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            "-${Constant.amountShow(amount: adminCommission.toString())}",
+                            "-${Constant.amountShow(amount: adminCommission.toString(), decimalDigits: 3)}",
                             style: TextStyle(
                               color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
                               fontSize: 16,
@@ -820,7 +820,7 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            "-${Constant.amountShow(amount: Constant.calculateAdminCommissionTax(adminCommission).toString())}",
+                            "-${Constant.amountShow(amount: Constant.calculateAdminCommissionTax(adminCommission).toString(), decimalDigits: 3)}",
                             style: TextStyle(
                               color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
                               fontSize: 16,
@@ -847,7 +847,7 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            "-${Constant.amountShow(amount: Constant.calculateTdsOrTcs(totalAmount, hasGst: (Constant.userModel?.userBankDetails?.gstNumber ?? '').trim().isNotEmpty).toString())}",
+                            "-${Constant.amountShow(amount: Constant.calculateTdsOrTcs(totalAmount, hasGst: (Constant.userModel?.userBankDetails?.gstNumber ?? '').trim().isNotEmpty).toString(), decimalDigits: 3)}",
                             style: TextStyle(
                               color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
                               fontSize: 16,
@@ -1197,7 +1197,7 @@ class HomeScreen extends StatelessWidget {
     totalTaxAmount = productTaxAmount + orderTaxAmount + packagingTaxAmount;
 
     /// ---------------- FINAL TOTAL ----------------
-    totalAmount = (subTotal - totalDiscount) + totalTaxAmount + packagingCharge;
+    totalAmount = (subTotal - totalDiscount) + packagingCharge;
 
     if (orderModel.paymentMethod!.toLowerCase() != 'cod') {
       if (orderModel.isFreeDelivery == true) {
@@ -1475,7 +1475,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      Constant.amountShow(amount: totalAmount.toString()),
+                      Constant.amountShow(amount: totalAmount.toString(), decimalDigits: 3),
                       style: TextStyle(
                         color: themeChange.getThem() ? AppThemeData.grey100 : AppThemeData.grey800,
                         fontSize: 16,
@@ -1506,7 +1506,7 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            "-${Constant.amountShow(amount: adminCommission.toString())}",
+                            "-${Constant.amountShow(amount: adminCommission.toString(), decimalDigits: 3)}",
                             style: TextStyle(
                               color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
                               fontSize: 16,
@@ -1533,7 +1533,7 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            "-${Constant.amountShow(amount: Constant.calculateAdminCommissionTax(adminCommission).toString())}",
+                            "-${Constant.amountShow(amount: Constant.calculateAdminCommissionTax(adminCommission).toString(), decimalDigits: 3)}",
                             style: TextStyle(
                               color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
                               fontSize: 16,
@@ -1560,7 +1560,7 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            "-${Constant.amountShow(amount: Constant.calculateTdsOrTcs(totalAmount, hasGst: (Constant.userModel?.userBankDetails?.gstNumber ?? '').trim().isNotEmpty).toString())}",
+                            "-${Constant.amountShow(amount: Constant.calculateTdsOrTcs(totalAmount, hasGst: (Constant.userModel?.userBankDetails?.gstNumber ?? '').trim().isNotEmpty).toString(), decimalDigits: 3)}",
                             style: TextStyle(
                               color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
                               fontSize: 16,
@@ -1838,7 +1838,7 @@ class HomeScreen extends StatelessWidget {
       }
     }
 
-    totalAmount = subTotal - double.parse(orderModel.discount.toString()) - specialDiscount + taxAmount;
+    totalAmount = subTotal - double.parse(orderModel.discount.toString()) - specialDiscount;
 
     if (orderModel.adminCommissionType == 'Percent') {
       double basePrice = subTotal / (1 + (double.parse(orderModel.adminCommission!) / 100));
@@ -2107,7 +2107,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      Constant.amountShow(amount: totalAmount.toString()),
+                      Constant.amountShow(amount: totalAmount.toString(), decimalDigits: 3),
                       style: TextStyle(
                         color: themeChange.getThem() ? AppThemeData.grey100 : AppThemeData.grey800,
                         fontSize: 16,
@@ -2138,7 +2138,7 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            "-${Constant.amountShow(amount: adminCommission.toString())}",
+                            "-${Constant.amountShow(amount: adminCommission.toString(), decimalDigits: 3)}",
                             style: TextStyle(
                               color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
                               fontSize: 16,
@@ -2165,7 +2165,7 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            "-${Constant.amountShow(amount: Constant.calculateAdminCommissionTax(adminCommission).toString())}",
+                            "-${Constant.amountShow(amount: Constant.calculateAdminCommissionTax(adminCommission).toString(), decimalDigits: 3)}",
                             style: TextStyle(
                               color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
                               fontSize: 16,
@@ -2192,7 +2192,7 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            "-${Constant.amountShow(amount: Constant.calculateTdsOrTcs(totalAmount, hasGst: (Constant.userModel?.userBankDetails?.gstNumber ?? '').trim().isNotEmpty).toString())}",
+                            "-${Constant.amountShow(amount: Constant.calculateTdsOrTcs(totalAmount, hasGst: (Constant.userModel?.userBankDetails?.gstNumber ?? '').trim().isNotEmpty).toString(), decimalDigits: 3)}",
                             style: TextStyle(
                               color: themeChange.getThem() ? AppThemeData.danger300 : AppThemeData.danger300,
                               fontSize: 16,

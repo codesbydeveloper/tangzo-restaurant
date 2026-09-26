@@ -207,7 +207,7 @@ class OrderDetailsController extends GetxController {
     totalTaxAmount.value = productTaxAmount.value + orderTaxAmount.value + packagingTaxAmount.value;
 
     /// ---------------- FINAL TOTAL ----------------
-    totalAmount.value = (subTotal.value - totalDiscount) + totalTaxAmount.value + packagingCharge.value;
+    totalAmount.value = (subTotal.value - totalDiscount) + packagingCharge.value;
     totalRejectAmount.value =
         totalAmount.value + platformFee.value + platformTaxAmount.value + driverDeliveryTaxAmount.value + (orderModel.value.isFreeDelivery == false ? deliveryCharges.value + deliveryTips.value : 0);
 

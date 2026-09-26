@@ -211,9 +211,9 @@ class Constant {
     return "#${(orderId).substring(orderId.length - 10)}";
   }
 
-  static String amountShow({required String? amount}) {
+  static String amountShow({required String? amount, int? decimalDigits}) {
     final value = (amount == null || amount == "null" || amount.isEmpty) ? 0.0 : double.parse(amount);
-    final formatted = value.toStringAsFixed(currencyModel?.decimalDigits ?? 2);
+    final formatted = value.toStringAsFixed(decimalDigits ?? currencyModel?.decimalDigits ?? 3);
     final symbol = currencyModel?.symbol ?? '₹';
     return currencyModel?.symbolAtRight == true ? ' $formatted $symbol' : ' $symbol $formatted';
   }
