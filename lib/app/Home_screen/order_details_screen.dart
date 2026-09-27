@@ -448,19 +448,19 @@ class OrderDetailsScreen extends StatelessWidget {
                                   sectionDivider(themeChange.getThem()),
 
                                   /// Tax
-                                  InkWell(
-                                    onTap: () {
-                                      showBillBifurcationDialog(context, themeChange.getThem(), controller);
-                                    },
-                                    child: amountRow(
-                                        title: "Tax amount",
-                                        amount: Constant.amountShow(amount: controller.totalTaxAmount.value.toString()),
-                                        isDark: themeChange.getThem(),
-                                        textColour: AppThemeData.secondary300,
-                                        underline: true),
-                                  ),
-
-                                  sectionDivider(themeChange.getThem()),
+                                  // InkWell(
+                                  //   onTap: () {
+                                  //     showBillBifurcationDialog(context, themeChange.getThem(), controller);
+                                  //   },
+                                  //   child: amountRow(
+                                  //       title: "Tax amount",
+                                  //       amount: Constant.amountShow(amount: controller.totalTaxAmount.value.toString()),
+                                  //       isDark: themeChange.getThem(),
+                                  //       textColour: AppThemeData.secondary300,
+                                  //       underline: true),
+                                  // ),
+                                  //
+                                  // sectionDivider(themeChange.getThem()),
 
                                   /// To Pay
                                   amountRow(
