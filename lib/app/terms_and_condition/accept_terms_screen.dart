@@ -1,17 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Constant;
 import 'package:flutter/material.dart';
-import 'package:flutter_html/flutter_html.dart';
-import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import 'package:restaurant/app/terms_and_condition/terms_and_condition_screen.dart';
 import 'package:restaurant/constant/constant.dart';
+import 'package:restaurant/constant/food_safety_agreement.dart';
 import 'package:restaurant/constant/show_toast_dialog.dart';
 import 'package:restaurant/service/terms_acceptance_service.dart';
 import 'package:restaurant/themes/app_them_data.dart';
 import 'package:restaurant/themes/round_button_fill.dart';
 import 'package:restaurant/utils/dark_theme_provider.dart';
 import 'package:restaurant/utils/fire_store_utils.dart';
-import 'package:restaurant/utils/translation_notifier.dart';
 import 'package:restaurant/utils/vendor_navigation.dart';
 import 'package:restaurant/widget/translated_text.dart';
 
@@ -24,9 +21,15 @@ class AcceptTermsScreen extends StatefulWidget {
 
 class _AcceptTermsScreenState extends State<AcceptTermsScreen> {
   bool _isSubmitting = false;
+  bool _hasAgreed = false;
 
   Future<void> _acceptTerms() async {
     if (_isSubmitting) return;
+    if (!_hasAgreed) {
+      ShowToastDialog.showToast('Please confirm that you agree to this Agreement.');
+      return;
+    }
+
     final user = Constant.userModel;
     if (user == null) {
       ShowToastDialog.showToast('Unable to load your account. Please login again.');
@@ -36,7 +39,7 @@ class _AcceptTermsScreenState extends State<AcceptTermsScreen> {
     setState(() => _isSubmitting = true);
     ShowToastDialog.showLoader('Please wait');
     try {
-      final pdfFile = await TermsAcceptanceService.generateTermsPdf(user: user);
+      final pdfFile = await TermsAcceptanceService.getAgreementPdfFile();
       try {
         await TermsAcceptanceService.sendAcceptanceEmails(user: user, pdfFile: pdfFile);
       } catch (e) {
@@ -49,7 +52,7 @@ class _AcceptTermsScreenState extends State<AcceptTermsScreen> {
       Constant.userModel = user;
 
       ShowToastDialog.closeLoader();
-      ShowToastDialog.showToast('Terms & Conditions accepted.');
+      ShowToastDialog.showToast('Agreement accepted.');
       VendorNavigation.goAfterTermsAccepted(user);
     } catch (e) {
       ShowToastDialog.closeLoader();
@@ -63,19 +66,23 @@ class _AcceptTermsScreenState extends State<AcceptTermsScreen> {
   @override
   Widget build(BuildContext context) {
     final themeChange = Provider.of<DarkThemeProvider>(context);
+    final isDark = themeChange.getThem();
+    final textColor = isDark ? AppThemeData.grey50 : AppThemeData.grey900;
+    final mutedColor = isDark ? AppThemeData.grey300 : AppThemeData.grey600;
+
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: themeChange.getThem() ? AppThemeData.surfaceDark : AppThemeData.surface,
+        backgroundColor: isDark ? AppThemeData.surfaceDark : AppThemeData.surface,
         appBar: AppBar(
-          backgroundColor: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
+          backgroundColor: isDark ? AppThemeData.grey900 : AppThemeData.grey50,
           centerTitle: false,
           automaticallyImplyLeading: false,
           titleSpacing: 16,
           title: TranslatedText(
-            'Terms & Conditions',
+            'Food Safety Agreement',
             style: TextStyle(
-              color: themeChange.getThem() ? AppThemeData.grey100 : AppThemeData.grey800,
+              color: isDark ? AppThemeData.grey100 : AppThemeData.grey800,
               fontFamily: AppThemeData.bold,
               fontSize: 18,
             ),
@@ -84,7 +91,7 @@ class _AcceptTermsScreenState extends State<AcceptTermsScreen> {
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(4.0),
             child: Container(
-              color: themeChange.getThem() ? AppThemeData.grey700 : AppThemeData.grey200,
+              color: isDark ? AppThemeData.grey700 : AppThemeData.grey200,
               height: 4.0,
             ),
           ),
@@ -94,44 +101,72 @@ class _AcceptTermsScreenState extends State<AcceptTermsScreen> {
           child: Column(
             children: [
               Expanded(
-                child: SingleChildScrollView(
-                  child: ValueListenableBuilder(
-                    valueListenable: TranslationNotifier.refresh,
-                    builder: (_, __, ___) {
-                      return Html(
-                        shrinkWrap: true,
-                        data: cleanHtml(Constant.termsAndConditions.tr),
-                        style: {
-                          "body": Style(
-                            margin: Margins.zero,
-                            padding: HtmlPaddings.zero,
-                            color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                            fontSize: FontSize(14),
-                            fontFamily: AppThemeData.medium,
-                          ),
-                          "p": Style(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900),
-                          "li": Style(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900),
-                          "h1": Style(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900),
-                          "h2": Style(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900),
-                          "h3": Style(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900),
-                          "a": Style(color: AppThemeData.primary300),
-                        },
-                      );
-                    },
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppThemeData.grey900 : AppThemeData.grey50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? AppThemeData.grey700 : AppThemeData.grey200,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: SelectableText(
+                      FoodSafetyAgreement.displayText.trim(),
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 13.5,
+                        height: 1.45,
+                        fontFamily: AppThemeData.medium,
+                      ),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
-              TranslatedText(
-                'You must accept the Terms & Conditions to continue using Tangzo Restaurant.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontFamily: AppThemeData.medium,
-                  color: themeChange.getThem() ? AppThemeData.grey300 : AppThemeData.grey600,
+              InkWell(
+                onTap: _isSubmitting
+                    ? null
+                    : () => setState(() => _hasAgreed = !_hasAgreed),
+                borderRadius: BorderRadius.circular(8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Checkbox(
+                      value: _hasAgreed,
+                      activeColor: AppThemeData.secondary300,
+                      onChanged: _isSubmitting
+                          ? null
+                          : (value) => setState(() => _hasAgreed = value ?? false),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Text(
+                          'I Agree — I have read and unconditionally accept this Food Safety, FSSAI Compliance, Indemnity & Delivery Responsibility Agreement (${FoodSafetyAgreement.ref}).',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontFamily: AppThemeData.medium,
+                            color: mutedColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 4),
+              TranslatedText(
+                'You must accept this Agreement to continue using Tangzo Restaurant.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontFamily: AppThemeData.medium,
+                  color: mutedColor,
+                ),
+              ),
+              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -140,7 +175,7 @@ class _AcceptTermsScreenState extends State<AcceptTermsScreen> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: RoundedButtonFill(
-              title: _isSubmitting ? 'Please wait' : 'Accept',
+              title: _isSubmitting ? 'Please wait' : 'I Agree',
               color: AppThemeData.secondary300,
               textColor: AppThemeData.grey50,
               onPress: _isSubmitting ? () {} : _acceptTerms,
