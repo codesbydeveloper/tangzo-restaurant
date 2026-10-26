@@ -87,7 +87,7 @@ class WalletController extends GetxController {
         row.cells[1].value = element.orderId == null ? '' : Constant.orderId(orderId: element.orderId.toString());
 
         // ₹ symbol now SAFE ✅
-        row.cells[2].value = Constant.amountShow(amount: element.amount.toString());
+        row.cells[2].value = Constant.amountShow(amount: element.amount.toString(), decimalDigits: 3);
 
         row.cells[3].value = Constant.timestampToDateTime(element.date!);
       }

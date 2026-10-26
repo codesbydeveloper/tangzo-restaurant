@@ -72,7 +72,7 @@ class WalletScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Text(
-                                  Constant.amountShow(amount: controller.userModel.value.walletAmount.toString()),
+                                  Constant.amountShow(amount: controller.userModel.value.walletAmount.toString(), decimalDigits: 3),
                                   maxLines: 1,
                                   style: TextStyle(
                                     color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey900,
@@ -103,7 +103,7 @@ class WalletScreen extends StatelessWidget {
                                             ),
                                           ),
                                           Text(
-                                            Constant.amountShow(amount: controller.orderAmount.value.toString()),
+                                            Constant.amountShow(amount: controller.orderAmount.value.toString(), decimalDigits: 3),
                                             maxLines: 1,
                                             style: TextStyle(
                                               color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey900,
@@ -796,7 +796,7 @@ class WalletScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        "-${Constant.amountShow(amount: transactionModel.amount!.isEmpty ? "0.0" : transactionModel.amount.toString())}",
+                        "-${Constant.amountShow(amount: transactionModel.amount!.isEmpty ? "0.0" : transactionModel.amount.toString(), decimalDigits: 3)}",
                         style: const TextStyle(
                           fontSize: 16,
                           fontFamily: AppThemeData.medium,
@@ -899,7 +899,9 @@ class WalletScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        transactionModel.isTopup == false ? "-${Constant.amountShow(amount: transactionModel.amount.toString())}" : Constant.amountShow(amount: transactionModel.amount.toString()),
+                        transactionModel.isTopup == false
+                            ? "-${Constant.amountShow(amount: transactionModel.amount.toString(), decimalDigits: 3)}"
+                            : Constant.amountShow(amount: transactionModel.amount.toString(), decimalDigits: 3),
                         style: TextStyle(
                           fontSize: 16,
                           fontFamily: AppThemeData.medium,

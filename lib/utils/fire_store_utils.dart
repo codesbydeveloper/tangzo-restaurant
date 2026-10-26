@@ -673,10 +673,17 @@ class FireStoreUtils {
     final double netFoodSubtotal = subTotal - couponAmount - specialDiscountAmount;
 
     // ---------------- ADMIN COMMISSION AMOUNT ----------------
+    // Must match Order Summary: percent commission is inclusive
+    // (price already contains commission), not exclusive % of subtotal.
     final double adminCommissionRaw = double.tryParse(orderModel.adminCommission ?? '0') ?? 0.0;
     double adminCommissionAmount;
     if (orderModel.adminCommissionType == "Percent") {
-      adminCommissionAmount = netFoodSubtotal * (adminCommissionRaw / 100);
+      if (adminCommissionRaw > 0) {
+        final double basePrice = subTotal / (1 + (adminCommissionRaw / 100));
+        adminCommissionAmount = subTotal - basePrice;
+      } else {
+        adminCommissionAmount = 0.0;
+      }
     } else {
       // Flat commission amount
       adminCommissionAmount = adminCommissionRaw;
@@ -685,7 +692,7 @@ class FireStoreUtils {
     // ---------------- COMMISSION TAX (from admin_commission taxes, excluding TCS/TDS) ----------------
     final double commissionTaxAmount = Constant.calculateAdminCommissionTax(adminCommissionAmount);
 
-    // ---------------- TDS/TCS (from tax collection, on net food subtotal + tax + packaging = order total) ----------------
+    // ---------------- TDS/TCS on To Pay (net food + packaging) ----------------
     String gstNumber = '';
     if (orderModel.vendor?.author != null && orderModel.vendor!.author!.isNotEmpty) {
       final owner = await getUserProfile(orderModel.vendor!.author!);
@@ -695,10 +702,8 @@ class FireStoreUtils {
     final double tdsAmount = Constant.calculateTdsOrTcs(orderTotal, hasGst: gstNumber.isNotEmpty);
 
     // ---------------- FINAL VENDOR PAYOUT ----------------
-    // Net food value + packaging charge, minus commission, minus 18% tax
-    // on that commission, minus 1% TDS/TCS. This is the ONLY amount that
-    // gets credited to the vendor -- no tax money of any kind is included.
-    final double finalVendorPayout = netFoodSubtotal + packagingCharge - adminCommissionAmount - commissionTaxAmount - tdsAmount;
+    // To Pay - Admin Commission - Admin Commission Tax - TDS/TCS
+    final double finalVendorPayout = orderTotal - adminCommissionAmount - commissionTaxAmount - tdsAmount;
 
     final vendorId = orderModel.vendor!.author;
 
