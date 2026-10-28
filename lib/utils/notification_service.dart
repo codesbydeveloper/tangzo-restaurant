@@ -3,10 +3,7 @@ import 'dart:developer';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
-import 'package:restaurant/app/chat_screens/restaurant_inbox_screen.dart';
-import 'package:restaurant/app/dash_board_screens/dash_board_screen.dart';
 import 'package:restaurant/app/help_support_screen/help_support_screen.dart';
-import 'package:restaurant/controller/dash_board_controller.dart';
 import 'package:restaurant/utils/fire_store_utils.dart';
 import 'package:restaurant/utils/preferences.dart';
 
@@ -52,15 +49,11 @@ class NotificationService {
 
   Future<void> handleMessageClick({required String type, required bool isBgApp}) async {
     final String uid = FireStoreUtils.getCurrentUid();
+    // Customer-restaurant chat is disabled. Only admin help chat is opened.
     if (type == 'admin_chat' && uid.isNotEmpty) {
       await Preferences.setBoolean(Preferences.isClickOnNotification, true);
       if (isBgApp == false) {
         Get.offAll(HelpSupportScreen(isNavigateViaNotification: true));
-      } else if (type == 'orderChat') {
-        DashBoardController dashBoardScreen = Get.put(DashBoardController());
-        dashBoardScreen.selectedIndex.value = 0;
-        Get.offAll(DashBoardScreen());
-        Get.offAll(RestaurantInboxScreen());
       }
     }
   }

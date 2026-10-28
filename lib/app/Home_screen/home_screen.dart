@@ -8,8 +8,6 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:restaurant/app/Home_screen/order_details_screen.dart';
 import 'package:restaurant/app/add_restaurant_screen/add_restaurant_screen.dart';
-import 'package:restaurant/app/chat_screens/chat_screen.dart';
-import 'package:restaurant/app/chat_screens/restaurant_inbox_screen.dart';
 import 'package:restaurant/app/driver_screens/add_driver_screen.dart';
 import 'package:restaurant/app/product_rating_view_screen/product_rating_view_screen.dart';
 import 'package:restaurant/app/verification_screen/verification_screen.dart';
@@ -22,7 +20,6 @@ import 'package:restaurant/controller/home_controller.dart';
 import 'package:restaurant/models/cart_product_model.dart';
 import 'package:restaurant/models/order_model.dart';
 import 'package:restaurant/models/user_model.dart';
-import 'package:restaurant/models/vendor_model.dart';
 import 'package:restaurant/models/wallet_transaction_model.dart';
 import 'package:restaurant/service/audio_player_service.dart';
 import 'package:restaurant/themes/app_them_data.dart';
@@ -132,25 +129,7 @@ class HomeScreen extends StatelessWidget {
                                     ],
                                   )
                                 : null,
-                            actions: [
-                              if (controller.userModel.value.role == Constant.userRoleVendor)
-                                Visibility(
-                                  visible: controller.userModel.value.subscriptionPlan?.features?.chat != false,
-                                  child: InkWell(
-                                    splashColor: Colors.transparent,
-                                    onTap: () async {
-                                      Get.to(const RestaurantInboxScreen());
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                                      child: SvgPicture.asset(
-                                        "assets/icons/ic_chat.svg",
-                                        color: AppThemeData.grey50,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                            ],
+                            actions: const [],
                           ),
                           body: controller.userModel.value.isAutoVerify == false && controller.userModel.value.isDocumentVerify == false
                               ? Padding(
@@ -1630,176 +1609,151 @@ class HomeScreen extends StatelessWidget {
                       ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: RoundedButtonFill(
-                          title: "Cancel Order",
-                          color: AppThemeData.danger300,
-                          textColor: AppThemeData.grey50,
-                          height: 5,
-                          onPress: () async {
-                            ShowToastDialog.showLoader('Please wait...');
-                            orderModel.status = Constant.orderCancelled;
-                            if (orderModel.cashback?.id != null && orderModel.cashback?.cashbackValue != null) {
-                              await FireStoreUtils.deleteCashbackRedeem(orderModel);
-                            }
-                            if (orderModel.driver?.id != null) {
-                              UserModel? driver = await FireStoreUtils.getUserById(orderModel.driver!.id!);
-                              driver?.inProgressOrderID?.remove(orderModel.id);
-                              await FireStoreUtils.updateDriverUser(driver!);
-                            }
-                            await FireStoreUtils.updateOrder(orderModel);
+                  child: Builder(
+                    builder: (context) {
+                      final bool canCancelOrder = orderModel.status != Constant.orderShipped &&
+                          orderModel.status != Constant.orderInTransit;
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: RoundedButtonFill(
+                              title: "Cancel Order",
+                              color: canCancelOrder
+                                  ? AppThemeData.danger300
+                                  : (themeChange.getThem() ? AppThemeData.grey700 : AppThemeData.grey300),
+                              textColor: canCancelOrder
+                                  ? AppThemeData.grey50
+                                  : (themeChange.getThem() ? AppThemeData.grey400 : AppThemeData.grey500),
+                              height: 5,
+                              onPress: () async {
+                                if (!canCancelOrder) {
+                                  ShowToastDialog.showToast(
+                                    "Cancel is not allowed once the order is shipped or in transit.",
+                                  );
+                                  return;
+                                }
+                                ShowToastDialog.showLoader('Please wait...');
+                                orderModel.status = Constant.orderCancelled;
+                                if (orderModel.cashback?.id != null && orderModel.cashback?.cashbackValue != null) {
+                                  await FireStoreUtils.deleteCashbackRedeem(orderModel);
+                                }
+                                if (orderModel.driver?.id != null) {
+                                  UserModel? driver = await FireStoreUtils.getUserById(orderModel.driver!.id!);
+                                  driver?.inProgressOrderID?.remove(orderModel.id);
+                                  await FireStoreUtils.updateDriverUser(driver!);
+                                }
+                                await FireStoreUtils.updateOrder(orderModel);
 
-                            SendNotification.sendFcmMessage(Constant.restaurantCancelled, orderModel.author!.fcmToken.toString(), {});
+                                SendNotification.sendFcmMessage(Constant.restaurantCancelled, orderModel.author!.fcmToken.toString(), {});
 
-                            if (orderModel.paymentMethod!.toLowerCase() != 'cod') {
-                              double taxModelAmount = orderTaxAmount + productTaxAmount + packagingTaxAmount;
-                              WalletTransactionModel historyTaxModel = WalletTransactionModel(
-                                  amount: taxModelAmount,
-                                  id: const Uuid().v4(),
-                                  orderId: orderModel.id,
-                                  userId: FireStoreUtils.getCurrentUid(),
-                                  date: Timestamp.now(),
-                                  isTopup: false,
-                                  paymentMethod: "tax",
-                                  paymentStatus: "success",
-                                  note: "Order tax refunded to customer",
-                                  transactionUser: "vendor");
-                              await FireStoreUtils.fireStore.collection(CollectionName.wallet).doc(historyTaxModel.id).set(historyTaxModel.toJson());
-                              double basePrice;
-                              final adminCommission = double.tryParse(orderModel.adminCommission ?? '0') ?? 0.0;
-                              if (Constant.adminCommission?.isEnabled == true) {
-                                basePrice = (subTotal / (1 + (adminCommission / 100))) - couponAmount - specialDiscountAmount + double.parse(orderModel.vendor?.packagingCharge ?? '0.0');
-                              } else {
-                                basePrice = subTotal - couponAmount - specialDiscountAmount + double.parse(orderModel.vendor?.packagingCharge ?? '0.0');
-                              }
-                              WalletTransactionModel historyModel = WalletTransactionModel(
-                                  amount: basePrice,
-                                  id: const Uuid().v4(),
-                                  orderId: orderModel.id,
-                                  userId: FireStoreUtils.getCurrentUid(),
-                                  date: Timestamp.now(),
-                                  isTopup: false,
-                                  paymentMethod: "Wallet",
-                                  paymentStatus: "success",
-                                  note: "Order amount refunded to customer",
-                                  transactionUser: "vendor");
-                              await FireStoreUtils.fireStore.collection(CollectionName.wallet).doc(historyModel.id).set(historyModel.toJson());
-                              double walletAmount = taxModelAmount + basePrice;
-                              await FireStoreUtils.updateUserWallet(amount: (-walletAmount).toString(), userId: FireStoreUtils.getCurrentUid().toString());
-                              WalletTransactionModel historyDataModel = WalletTransactionModel(
-                                  amount: totalRejectAmount,
-                                  id: const Uuid().v4(),
-                                  orderId: orderModel.id,
-                                  userId: orderModel.author!.id,
-                                  date: Timestamp.now(),
-                                  isTopup: true,
-                                  paymentMethod: "Wallet",
-                                  paymentStatus: "success",
-                                  note: "Order Refund success",
-                                  transactionUser: "user");
-
-                              await FireStoreUtils.fireStore.collection(CollectionName.wallet).doc(historyDataModel.id).set(historyDataModel.toJson());
-                              await FireStoreUtils.updateUserWallet(amount: totalRejectAmount.toString(), userId: orderModel.author!.id.toString());
-                            }
-
-                            ShowToastDialog.closeLoader();
-                            controller.getOrder();
-                            await AudioPlayerService.playSound(false);
-                            Get.back();
-                          },
-                        ),
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Expanded(
-                        child: orderModel.takeAway == true
-                            ? RoundedButtonFill(
-                                title: "Delivered",
-                                color: AppThemeData.secondary300,
-                                textColor: AppThemeData.grey50,
-                                height: 5,
-                                onPress: () async {
-                                  ShowToastDialog.showLoader('Please wait...');
-                                  orderModel.status = Constant.orderCompleted;
-                                  if (orderModel.cashback?.cashbackValue != null && orderModel.cashback?.id != null) {
-                                    WalletTransactionModel transactionModel = WalletTransactionModel(
-                                        id: Constant.getUuid(),
-                                        amount: double.parse("${orderModel.cashback?.cashbackValue ?? 0.0}"),
-                                        date: Timestamp.now(),
-                                        paymentMethod: "Cashback Amount",
-                                        transactionUser: "user",
-                                        userId: orderModel.author?.id,
-                                        isTopup: true,
-                                        orderId: orderModel.id,
-                                        note: "Cashback Amount",
-                                        paymentStatus: "success");
-                                    await FireStoreUtils.setWalletTransaction(transactionModel).then((value) async {
-                                      if (value == true) {
-                                        await FireStoreUtils.updateUserWallet(
-                                            amount: double.parse("${orderModel.cashback?.cashbackValue ?? 0.0}").toString(), userId: orderModel.author!.id.toString());
-                                      }
-                                    });
+                                if (orderModel.paymentMethod!.toLowerCase() != 'cod') {
+                                  double taxModelAmount = orderTaxAmount + productTaxAmount + packagingTaxAmount;
+                                  WalletTransactionModel historyTaxModel = WalletTransactionModel(
+                                      amount: taxModelAmount,
+                                      id: const Uuid().v4(),
+                                      orderId: orderModel.id,
+                                      userId: FireStoreUtils.getCurrentUid(),
+                                      date: Timestamp.now(),
+                                      isTopup: false,
+                                      paymentMethod: "tax",
+                                      paymentStatus: "success",
+                                      note: "Order tax refunded to customer",
+                                      transactionUser: "vendor");
+                                  await FireStoreUtils.fireStore.collection(CollectionName.wallet).doc(historyTaxModel.id).set(historyTaxModel.toJson());
+                                  double basePrice;
+                                  final adminCommission = double.tryParse(orderModel.adminCommission ?? '0') ?? 0.0;
+                                  if (Constant.adminCommission?.isEnabled == true) {
+                                    basePrice = (subTotal / (1 + (adminCommission / 100))) - couponAmount - specialDiscountAmount + double.parse(orderModel.vendor?.packagingCharge ?? '0.0');
+                                  } else {
+                                    basePrice = subTotal - couponAmount - specialDiscountAmount + double.parse(orderModel.vendor?.packagingCharge ?? '0.0');
                                   }
-                                  await FireStoreUtils.updateOrder(orderModel);
-                                  await FireStoreUtils.restaurantVendorWalletSet(orderModel);
-                                  SendNotification.sendFcmMessage(Constant.takeawayCompleted, orderModel.author!.fcmToken.toString(), {});
+                                  WalletTransactionModel historyModel = WalletTransactionModel(
+                                      amount: basePrice,
+                                      id: const Uuid().v4(),
+                                      orderId: orderModel.id,
+                                      userId: FireStoreUtils.getCurrentUid(),
+                                      date: Timestamp.now(),
+                                      isTopup: false,
+                                      paymentMethod: "Wallet",
+                                      paymentStatus: "success",
+                                      note: "Order amount refunded to customer",
+                                      transactionUser: "vendor");
+                                  await FireStoreUtils.fireStore.collection(CollectionName.wallet).doc(historyModel.id).set(historyModel.toJson());
+                                  double walletAmount = taxModelAmount + basePrice;
+                                  await FireStoreUtils.updateUserWallet(amount: (-walletAmount).toString(), userId: FireStoreUtils.getCurrentUid().toString());
+                                  WalletTransactionModel historyDataModel = WalletTransactionModel(
+                                      amount: totalRejectAmount,
+                                      id: const Uuid().v4(),
+                                      orderId: orderModel.id,
+                                      userId: orderModel.author!.id,
+                                      date: Timestamp.now(),
+                                      isTopup: true,
+                                      paymentMethod: "Wallet",
+                                      paymentStatus: "success",
+                                      note: "Order Refund success",
+                                      transactionUser: "user");
 
-                                  ShowToastDialog.closeLoader();
-                                },
-                              )
-                            : RoundedButtonFill(
-                                title: orderModel.status.toString(),
-                                color: AppThemeData.secondary300,
-                                textColor: AppThemeData.grey50,
-                                height: 5,
-                                onPress: () async {},
-                              ),
-                      ),
-                      Visibility(
-                        visible: controller.userModel.value.subscriptionPlan?.features?.chat != false,
-                        child: Row(
-                          children: [
-                            const SizedBox(
-                              width: 10,
-                            ),
-                            IconButton(
-                              onPressed: () async {
-                                ShowToastDialog.showLoader("Please wait");
-                                UserModel? customer = await FireStoreUtils.getUserById(orderModel.authorID.toString());
-                                UserModel? restaurantUser = await FireStoreUtils.getUserProfile(orderModel.vendor!.author.toString());
-                                VendorModel? vendorModel = await FireStoreUtils.getVendorById(orderModel.vendorID.toString());
+                                  await FireStoreUtils.fireStore.collection(CollectionName.wallet).doc(historyDataModel.id).set(historyDataModel.toJson());
+                                  await FireStoreUtils.updateUserWallet(amount: totalRejectAmount.toString(), userId: orderModel.author!.id.toString());
+                                }
+
                                 ShowToastDialog.closeLoader();
-                                Get.to(const ChatScreen(), arguments: {
-                                  "senderId": restaurantUser!.id,
-                                  "senderName": vendorModel!.title,
-                                  "senderProfileUrl": vendorModel.photo,
-                                  "receivedName": customer!.fullName(),
-                                  "receivedId": customer.id,
-                                  "receivedProfileUrl": customer.profilePictureURL,
-                                  "orderId": "${Constant.userRoleVendor}${orderModel.id}",
-                                  "token": restaurantUser.fcmToken,
-                                  "chatType": Constant.userRoleVendor,
-                                });
+                                controller.getOrder();
+                                await AudioPlayerService.playSound(false);
+                                Get.back();
                               },
-                              icon: Container(
-                                  decoration: ShapeDecoration(
-                                    color: AppThemeData.secondary50,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          Expanded(
+                            child: orderModel.takeAway == true
+                                ? RoundedButtonFill(
+                                    title: "Delivered",
+                                    color: AppThemeData.secondary300,
+                                    textColor: AppThemeData.grey50,
+                                    height: 5,
+                                    onPress: () async {
+                                      ShowToastDialog.showLoader('Please wait...');
+                                      orderModel.status = Constant.orderCompleted;
+                                      if (orderModel.cashback?.cashbackValue != null && orderModel.cashback?.id != null) {
+                                        WalletTransactionModel transactionModel = WalletTransactionModel(
+                                            id: Constant.getUuid(),
+                                            amount: double.parse("${orderModel.cashback?.cashbackValue ?? 0.0}"),
+                                            date: Timestamp.now(),
+                                            paymentMethod: "Cashback Amount",
+                                            transactionUser: "user",
+                                            userId: orderModel.author?.id,
+                                            isTopup: true,
+                                            orderId: orderModel.id,
+                                            note: "Cashback Amount",
+                                            paymentStatus: "success");
+                                        await FireStoreUtils.setWalletTransaction(transactionModel).then((value) async {
+                                          if (value == true) {
+                                            await FireStoreUtils.updateUserWallet(
+                                                amount: double.parse("${orderModel.cashback?.cashbackValue ?? 0.0}").toString(), userId: orderModel.author!.id.toString());
+                                          }
+                                        });
+                                      }
+                                      await FireStoreUtils.updateOrder(orderModel);
+                                      await FireStoreUtils.restaurantVendorWalletSet(orderModel);
+                                      SendNotification.sendFcmMessage(Constant.takeawayCompleted, orderModel.author!.fcmToken.toString(), {});
+
+                                      ShowToastDialog.closeLoader();
+                                    },
+                                  )
+                                : RoundedButtonFill(
+                                    title: orderModel.status.toString(),
+                                    color: AppThemeData.secondary300,
+                                    textColor: AppThemeData.grey50,
+                                    height: 5,
+                                    onPress: () async {},
                                   ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: SvgPicture.asset("assets/icons/ic_message.svg"),
-                                  )),
-                            )
-                          ],
-                        ),
-                      ),
-                    ],
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],
