@@ -46,6 +46,9 @@ class VendorModel {
   String? subscriptionTotalOrders;
   bool? isSelfDelivery;
   String? packagingCharge;
+  /// Incremented on every menu mutation so customer apps can invalidate caches.
+  int? menuVersion;
+  Timestamp? menuUpdatedAt;
 
   VendorModel(
       {this.author,
@@ -90,7 +93,9 @@ class VendorModel {
       this.subscriptionPlan,
       this.subscriptionTotalOrders,
       this.isSelfDelivery,
-      this.packagingCharge});
+      this.packagingCharge,
+      this.menuVersion,
+      this.menuUpdatedAt});
 
   VendorModel.fromJson(Map<String, dynamic> json) {
     author = json['author'];
@@ -146,6 +151,10 @@ class VendorModel {
     subscriptionTotalOrders = json['subscriptionTotalOrders'];
     isSelfDelivery = json['isSelfDelivery'] ?? false;
     packagingCharge = json['packagingCharge'] ?? "0";
+    menuVersion = json['menuVersion'] is int
+        ? json['menuVersion'] as int
+        : int.tryParse(json['menuVersion']?.toString() ?? '');
+    menuUpdatedAt = json['menuUpdatedAt'];
   }
 
   Map<String, dynamic> toJson() {
@@ -205,6 +214,8 @@ class VendorModel {
     data['latitude'] = latitude;
     data['isSelfDelivery'] = isSelfDelivery ?? false;
     data['packagingCharge'] = packagingCharge;
+    data['menuVersion'] = menuVersion;
+    data['menuUpdatedAt'] = menuUpdatedAt;
     return data;
   }
 }

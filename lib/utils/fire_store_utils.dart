@@ -803,6 +803,9 @@ class FireStoreUtils {
       log("Failed to update user: $error");
       isUpdate = false;
     });
+    if (isUpdate) {
+      await bumpVendorMenuVersion(productModel.vendorID);
+    }
     return isUpdate;
   }
 
@@ -814,7 +817,26 @@ class FireStoreUtils {
       log("Failed to update user: $error");
       isUpdate = false;
     });
+    if (isUpdate) {
+      await bumpVendorMenuVersion(productModel.vendorID);
+    }
     return isUpdate;
+  }
+
+  /// Atomic menu cache invalidation signal for customer apps.
+  /// Uses FieldValue.increment — no vendor document read required.
+  static Future<void> bumpVendorMenuVersion(String? vendorId) async {
+    final id = vendorId?.isNotEmpty == true ? vendorId : Constant.userModel?.vendorID;
+    if (id == null || id.isEmpty) return;
+    try {
+      await fireStore.collection(CollectionName.vendors).doc(id).update({
+        'menuVersion': FieldValue.increment(1),
+        'menuUpdatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      // Vendor may not exist yet during onboarding; non-fatal for product write.
+      log('bumpVendorMenuVersion failed: $e');
+    }
   }
 
   static Future<List<WalletTransactionModel>?> getWalletTransaction() async {
@@ -1579,6 +1601,9 @@ class FireStoreUtils {
       log("Failed to update user: $error");
       isAdded = false;
     });
+    if (isAdded) {
+      await bumpVendorMenuVersion(orderModel.vendorID);
+    }
     return isAdded;
   }
 
