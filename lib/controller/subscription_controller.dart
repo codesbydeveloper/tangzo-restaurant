@@ -1,6 +1,7 @@
 // import 'package:foloosi_plugins/foloosi_plugins.dart';
 import 'package:get/get.dart';
 import 'package:restaurant/constant/collection_name.dart';
+import 'package:restaurant/controller/cashfree_service_controller.dart';
 import 'package:restaurant/controller/dash_board_controller.dart';
 import 'package:restaurant/controller/instamojo_service_controller.dart';
 import 'package:restaurant/controller/mtnmomo_controller.dart';
@@ -174,8 +175,17 @@ class SubscriptionController extends GetxController {
         // razorPay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentError);
       },
     );
-    // Default to Cashfree (other gateways disabled)
-    selectedPaymentMethod.value = PaymentGateway.cashfree.name;
+    if (cashfreeModel.value.enable == true) {
+      selectedPaymentMethod.value = PaymentGateway.cashfree.name;
+    } else if (walletSettingModel.value.isEnabled == true) {
+      selectedPaymentMethod.value = PaymentGateway.wallet.name;
+    } else if (payStackModel.value.isEnable == true) {
+      selectedPaymentMethod.value = PaymentGateway.paystack.name;
+    } else if (stripeModel.value.isEnabled == true) {
+      selectedPaymentMethod.value = PaymentGateway.stripe.name;
+    } else {
+      selectedPaymentMethod.value = '';
+    }
     isLoading.value = false;
   }
 
@@ -948,7 +958,25 @@ class SubscriptionController extends GetxController {
   }
 
   Future<void> cashFreeMakePayment({required BuildContext context, required String amount, required String paymentDesc}) async {
-    ShowToastDialog.showToast('Only the free plan is available.');
+    ShowToastDialog.showLoader("Please wait");
+    final started = await CashfreeService().startCheckoutPayment(
+      cashfree: cashfreeModel.value,
+      userModel: userModel.value,
+      amount: double.parse(double.parse(amount).toStringAsFixed(2)),
+      paymentDesc: paymentDesc,
+      onSuccess: (orderId) {
+        ShowToastDialog.closeLoader();
+        ShowToastDialog.showToast("Payment Successful!!");
+        placeOrder();
+      },
+      onError: (message) {
+        ShowToastDialog.closeLoader();
+        ShowToastDialog.showToast(message);
+      },
+    );
+    if (started) {
+      ShowToastDialog.closeLoader();
+    }
   }
 
   Future<void> makeInstamojoPayment({required String amount, required String paymentDesc}) async {

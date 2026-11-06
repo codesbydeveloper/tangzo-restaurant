@@ -294,7 +294,7 @@ class ProductListScreen extends StatelessWidget {
                                         Get.to(const AddProductScreen(), arguments: {"productModel": controller.productList[index]})!.then(
                                           (value) {
                                             if (value == true) {
-                                              controller.getProduct();
+                                              controller.getProduct(forceRefresh: true);
                                             }
                                           },
                                         );
@@ -476,7 +476,7 @@ class ProductListScreen extends StatelessWidget {
                                                             ShowToastDialog.showLoader("Please wait..");
                                                             await FireStoreUtils.deleteProduct(controller.productList[index]).then(
                                                               (value) {
-                                                                controller.getProduct();
+                                                                controller.getProduct(forceRefresh: true);
                                                                 ShowToastDialog.closeLoader();
                                                               },
                                                             );
@@ -717,7 +717,7 @@ class AddProductBottomSheet extends StatelessWidget {
               Get.to(const AddProductScreen())!.then(
                 (value) {
                   if (value == true) {
-                    controller.getProduct();
+                    controller.getProduct(forceRefresh: true);
                   }
                 },
               );
@@ -736,7 +736,7 @@ class AddProductBottomSheet extends StatelessWidget {
               // Navigate to Admin Product List Screen
               Get.to(() => AdminProductScreen())?.then(
                 (value) {
-                  controller.getProduct();
+                  controller.getProduct(forceRefresh: true);
                 },
               );
             },

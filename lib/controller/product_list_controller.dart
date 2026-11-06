@@ -64,7 +64,7 @@ class ProductListController extends GetxController {
 
   RxList<ProductModel> productList = <ProductModel>[].obs;
 
-  Future<void> getProduct() async {
+  Future<void> getProduct({bool forceRefresh = false}) async {
     if (userModel.value.vendorID != null) {
       await FireStoreUtils.getVendorById(userModel.value.vendorID ?? '').then(
         (value) {
@@ -74,7 +74,7 @@ class ProductListController extends GetxController {
         },
       );
     }
-    await FireStoreUtils.getProduct().then(
+    await FireStoreUtils.getProduct(forceRefresh: forceRefresh).then(
       (value) {
         if (value != null) {
           productList.value = value;

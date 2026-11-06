@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:restaurant/constant/constant.dart';
 import 'package:restaurant/constant/show_toast_dialog.dart';
+import 'package:restaurant/app/subscription_plan_screen/select_payment_screen.dart';
 import 'package:restaurant/controller/subscription_controller.dart';
 import 'package:restaurant/models/subscription_plan_model.dart';
 import 'package:restaurant/themes/app_them_data.dart';
@@ -91,7 +92,7 @@ class SubscriptionPlanScreen extends StatelessWidget {
                                           controller.selectedPaymentMethod.value = 'free';
                                           controller.placeOrder();
                                         } else {
-                                          ShowToastDialog.showToast('Only the free plan is available.');
+                                          Get.to(() => const SelectPaymentScreen());
                                         }
                                       }
                                     },

@@ -64,6 +64,8 @@ import 'package:restaurant/models/withdraw_method_model.dart';
 import 'package:restaurant/models/withdrawal_model.dart';
 import 'package:restaurant/models/zone_model.dart';
 import 'package:restaurant/service/audio_player_service.dart';
+import 'package:restaurant/services/menu_cache_repository.dart';
+import 'package:restaurant/services/settings_api.dart';
 import 'package:restaurant/themes/app_them_data.dart';
 import 'package:restaurant/utils/preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -229,79 +231,207 @@ class FireStoreUtils {
 
   static Future<void> getSettings() async {
     try {
-      // await fireStore
-      //     .collection(CollectionName.settings)
-      //     .doc("localisationSettings")
-      //     .set({'translationVersion': '9', 'localisationType': 'AI/ML', 'apiKeyOfDeepl': '64f26cf0-d236-4560-b562-4dad249654b6'});
+      final bundle = await SettingsApi.getBundle();
+      // ignore: unawaited_futures
+      SettingsApi.refreshInBackground();
+      if (bundle != null && bundle.docs.isNotEmpty) {
+        final docs = bundle.docs;
+        final global = docs['globalSettings'];
+        if (global != null) {
+          Constant.defaultCountryCode = global['defaultCountryCode'] ?? '';
+          Constant.orderRingtoneUrl = global['order_ringtone_url'] ?? '';
+          Preferences.setString(Preferences.orderRingtone, Constant.orderRingtoneUrl);
+          final color = global['app_restaurant_color']?.toString();
+          if (color != null && color.isNotEmpty) {
+            AppThemeData.secondary300 =
+                Color(int.parse(color.replaceFirst("#", "0xff")));
+          }
+          Constant.isEnableAdsFeature = global['isEnableAdsFeature'] ?? false;
+          Constant.isSelfDeliveryFeature = global['isSelfDelivery'] ?? false;
+          Constant.apiSecureKey = global['apiSecureKey'] ?? "";
+          Constant.apiBaseUrl = global['apiBaseUrl'] ?? "";
+          Constant.taxScope = global['taxScope'] ?? "";
+          if (Constant.orderRingtoneUrl.isNotEmpty) {
+            await AudioPlayerService.initAudio();
+          }
+        }
+        final restaurant = docs['restaurant'];
+        if (restaurant != null) {
+          Constant.isEmployeeManagement = restaurant['isEmployeeManagement'] ?? false;
+          Constant.autoApproveRestaurant = restaurant['auto_approve_restaurant'];
+          Constant.isSubscriptionModelApplied = restaurant['subscription_model'];
+          Constant.packagingChargeEnable = restaurant['packagingChargeEnable'] ?? false;
+        }
+        final driverNear = docs['DriverNearBy'];
+        if (driverNear != null) {
+          Constant.selectedMapType = driverNear['selectedMapType'];
+          Constant.singleOrderReceive = driverNear['singleOrderReceive'];
+        }
+        final schedule = docs['scheduleOrderNotification'];
+        if (schedule != null) {
+          Constant.scheduleOrderTime = schedule['notifyTime'];
+          Constant.scheduleOrderTimeType = schedule['timeUnit'];
+        }
+        final dinein = docs['DineinForRestaurant'];
+        if (dinein != null) Constant.isDineInEnable = dinein['isEnabled'];
+        final adminCommission = docs['AdminCommission'];
+        if (adminCommission != null) {
+          Constant.adminCommission = AdminCommission.fromJson(adminCommission);
+        }
+        final mapKey = docs['googleMapKey'];
+        if (mapKey != null) {
+          Constant.mapAPIKey = mapKey['key'];
+          Constant.placeHolderImage = mapKey['placeHolderImage']?.toString() ?? '';
+        }
+        final story = docs['story'];
+        if (story != null) Constant.storyEnable = story['isEnabled'];
+        final placeholder = docs['placeHolderImage'];
+        if (placeholder != null) {
+          Constant.placeholderImage = placeholder['image']?.toString() ?? '';
+        }
+        // Keep both placeholder fields in sync for NetworkImageWidget fallbacks.
+        if (Constant.placeholderImage.isEmpty &&
+            Constant.placeHolderImage.isNotEmpty) {
+          Constant.placeholderImage = Constant.placeHolderImage;
+        } else if (Constant.placeHolderImage.isEmpty &&
+            Constant.placeholderImage.isNotEmpty) {
+          Constant.placeHolderImage = Constant.placeholderImage;
+        }
+        final version = docs['Version'];
+        if (version != null) {
+          Constant.googlePlayLink = version['googlePlayLink'] ?? '';
+          Constant.appStoreLink = version['appStoreLink'] ?? '';
+          Constant.appVersion = version['app_version'] ?? '';
+          Constant.storeUrl = version['storeUrl'] ?? '';
+        }
+        final nearby = docs['RestaurantNearBy'];
+        if (nearby != null) Constant.distanceType = nearby['distanceType'];
+        final special = docs['specialDiscountOffer'];
+        if (special != null) {
+          Constant.specialDiscountOfferEnable = special['isEnable'];
+        }
+        final email = docs['emailSetting'];
+        if (email != null) Constant.mailSettings = MailSettings.fromJson(email);
+        final contact = docs['ContactUs'];
+        if (contact != null) Constant.adminEmail = contact['Email'];
+        final notif = docs['notification_setting'];
+        if (notif != null) {
+          Constant.senderId = notif['projectId'];
+          Constant.jsonNotificationFileURL = notif['serviceJson'];
+        }
+        final docVer = docs['document_verification_settings'];
+        if (docVer != null) {
+          Constant.isRestaurantVerification = docVer['isRestaurantVerification'];
+        }
+        final privacy = docs['privacyPolicy'];
+        if (privacy != null) Constant.privacyPolicy = privacy['privacy_policy'];
+        final terms = docs['termsAndConditions'];
+        if (terms != null) {
+          Constant.termsAndConditions = terms['termsAndConditions'];
+        }
+        final openai = docs['openai_settings'];
+        if (openai != null) Constant.openAIStatus = openai['status'];
+        final localisation = docs['localisationSettings'];
+        if (localisation != null) {
+          Constant.apiKeyOfDeepl = localisation['apiKeyOfDeepl'] ?? '';
+          Constant.localisationType = localisation['localisationType'] ?? '';
+        }
+      } else {
+        await fireStore.collection(CollectionName.settings).doc("globalSettings").get().then((value) async {
+          Constant.defaultCountryCode = value.data()?["defaultCountryCode"] ?? '';
+          Constant.orderRingtoneUrl = value.data()?['order_ringtone_url'] ?? '';
+          Preferences.setString(Preferences.orderRingtone, Constant.orderRingtoneUrl);
+          AppThemeData.secondary300 = Color(int.parse(value.data()!['app_restaurant_color'].replaceFirst("#", "0xff")));
+          Constant.isEnableAdsFeature = value.data()?['isEnableAdsFeature'] ?? false;
+          Constant.isSelfDeliveryFeature = value.data()?['isSelfDelivery'] ?? false;
+          Constant.apiSecureKey = value.data()?['apiSecureKey'] ?? "";
+          Constant.apiBaseUrl = value.data()?['apiBaseUrl'] ?? "";
+          Constant.taxScope = value.data()?['taxScope'] ?? "";
+          if (Constant.orderRingtoneUrl.isNotEmpty) {
+            await AudioPlayerService.initAudio();
+          }
+        });
+        await fireStore.collection(CollectionName.settings).doc('restaurant').get().then((value) {
+          Constant.isEmployeeManagement = value.data()?['isEmployeeManagement'] ?? false;
+          Constant.autoApproveRestaurant = value.data()!['auto_approve_restaurant'];
+          Constant.isSubscriptionModelApplied = value.data()!['subscription_model'];
+          Constant.packagingChargeEnable = value.data()!['packagingChargeEnable'] ?? false;
+        });
+        fireStore.collection(CollectionName.settings).doc("DriverNearBy").get().then((event) {
+          if (event.exists) {
+            Constant.selectedMapType = event.data()!["selectedMapType"];
+            Constant.singleOrderReceive = event.data()!['singleOrderReceive'];
+          }
+        });
+        fireStore.collection(CollectionName.settings).doc("scheduleOrderNotification").get().then((time) {
+          if (time.exists) {
+            Constant.scheduleOrderTime = time.data()!["notifyTime"];
+            Constant.scheduleOrderTimeType = time.data()!["timeUnit"];
+          }
+        });
+        fireStore.collection(CollectionName.settings).doc("DineinForRestaurant").get().then((dineinresult) {
+          if (dineinresult.exists) {
+            Constant.isDineInEnable = dineinresult.data()!["isEnabled"];
+          }
+        });
+        await fireStore.collection(CollectionName.settings).doc("AdminCommission").get().then((value) {
+          if (value.data() != null) {
+            Constant.adminCommission = AdminCommission.fromJson(value.data()!);
+          }
+        });
+        fireStore.collection(CollectionName.settings).doc('story').get().then((value) {
+          Constant.storyEnable = value.data()!['isEnabled'];
+        });
+        fireStore.collection(CollectionName.settings).doc('placeHolderImage').get().then((value) {
+          Constant.placeholderImage = value.data()!['image'];
+        });
+        fireStore.collection(CollectionName.settings).doc("specialDiscountOffer").get().then((dineinresult) {
+          if (dineinresult.exists) {
+            Constant.specialDiscountOfferEnable = dineinresult.data()!["isEnable"];
+          }
+        });
+        fireStore.collection(CollectionName.settings).doc("emailSetting").get().then((value) {
+          if (value.exists) {
+            Constant.mailSettings = MailSettings.fromJson(value.data()!);
+          }
+        });
+        fireStore.collection(CollectionName.settings).doc("ContactUs").get().then((time) {
+          if (time.exists) {
+            Constant.adminEmail = time.data()!["Email"];
+          }
+        });
+        await fireStore.collection(CollectionName.settings).doc("document_verification_settings").get().then((value) {
+          Constant.isRestaurantVerification = value.data()!['isRestaurantVerification'];
+        });
+        fireStore.collection(CollectionName.settings).doc("privacyPolicy").get().then((event) {
+          if (event.exists) {
+            Constant.privacyPolicy = event.data()!["privacy_policy"];
+          }
+        });
+        fireStore.collection(CollectionName.settings).doc("termsAndConditions").get().then((event) {
+          if (event.exists) {
+            Constant.termsAndConditions = event.data()!["termsAndConditions"];
+          }
+        });
+        fireStore.collection(CollectionName.settings).doc("openai_settings").get().then((event) {
+          if (event.exists) {
+            Constant.openAIStatus = event.data()!["status"];
+          }
+        });
+      }
+
       fireStore.collection(CollectionName.settings).doc("localisationSettings").snapshots().listen((event) async {
         if (event.exists) {
           Constant.apiKeyOfDeepl = event.data()?["apiKeyOfDeepl"] ?? '';
           Constant.localisationType = event.data()?["localisationType"] ?? '';
         }
       });
-      await fireStore.collection(CollectionName.settings).doc("globalSettings").get().then((value) async {
-        Constant.defaultCountryCode = value.data()?["defaultCountryCode"] ?? '';
-        Constant.orderRingtoneUrl = value.data()?['order_ringtone_url'] ?? '';
-        Preferences.setString(Preferences.orderRingtone, Constant.orderRingtoneUrl);
-        AppThemeData.secondary300 = Color(int.parse(value.data()!['app_restaurant_color'].replaceFirst("#", "0xff")));
-        Constant.isEnableAdsFeature = value.data()?['isEnableAdsFeature'] ?? false;
-        Constant.isSelfDeliveryFeature = value.data()?['isSelfDelivery'] ?? false;
-        Constant.apiSecureKey = value.data()?['apiSecureKey'] ?? "";
-        Constant.apiBaseUrl = value.data()?['apiBaseUrl'] ?? "";
-        Constant.taxScope = value.data()?['taxScope'] ?? "";
-        if (Constant.orderRingtoneUrl.isNotEmpty) {
-          await AudioPlayerService.initAudio();
-        }
-      });
-
-      await fireStore.collection(CollectionName.settings).doc('restaurant').get().then((value) {
-        Constant.isEmployeeManagement = value.data()?['isEmployeeManagement'] ?? false;
-        Constant.autoApproveRestaurant = value.data()!['auto_approve_restaurant'];
-        Constant.isSubscriptionModelApplied = value.data()!['subscription_model'];
-        Constant.packagingChargeEnable = value.data()!['packagingChargeEnable'] ?? false;
-      });
-
-      fireStore.collection(CollectionName.settings).doc("DriverNearBy").get().then((event) {
-        if (event.exists) {
-          Constant.selectedMapType = event.data()!["selectedMapType"];
-          Constant.singleOrderReceive = event.data()!['singleOrderReceive'];
-        }
-      });
-
-      fireStore.collection(CollectionName.settings).doc("scheduleOrderNotification").get().then((time) {
-        if (time.exists) {
-          Constant.scheduleOrderTime = time.data()!["notifyTime"];
-          Constant.scheduleOrderTimeType = time.data()!["timeUnit"];
-        }
-      });
-
-      fireStore.collection(CollectionName.settings).doc("DineinForRestaurant").get().then((dineinresult) {
-        if (dineinresult.exists) {
-          Constant.isDineInEnable = dineinresult.data()!["isEnabled"];
-        }
-      });
-
-      await fireStore.collection(CollectionName.settings).doc("AdminCommission").get().then((value) {
-        if (value.data() != null) {
-          Constant.adminCommission = AdminCommission.fromJson(value.data()!);
-        }
-      });
-
       fireStore.collection(CollectionName.settings).doc("googleMapKey").snapshots().listen((event) {
         if (event.exists) {
           Constant.mapAPIKey = event.data()!["key"];
           Constant.placeHolderImage = event.data()!["placeHolderImage"];
         }
       });
-
-      fireStore.collection(CollectionName.settings).doc('story').get().then((value) {
-        Constant.storyEnable = value.data()!['isEnabled'];
-      });
-
-      fireStore.collection(CollectionName.settings).doc('placeHolderImage').get().then((value) {
-        Constant.placeholderImage = value.data()!['image'];
-      });
-
       fireStore.collection(CollectionName.settings).doc("Version").snapshots().listen((event) {
         if (event.exists) {
           Constant.googlePlayLink = event.data()!["googlePlayLink"] ?? '';
@@ -310,57 +440,10 @@ class FireStoreUtils {
           Constant.storeUrl = event.data()!["storeUrl"] ?? '';
         }
       });
-
-      fireStore.collection(CollectionName.settings).doc("RestaurantNearBy").snapshots().listen((event) {
-        if (event.exists) {
-          Constant.distanceType = event.data()!["distanceType"];
-        }
-      });
-
-      fireStore.collection(CollectionName.settings).doc("specialDiscountOffer").get().then((dineinresult) {
-        if (dineinresult.exists) {
-          Constant.specialDiscountOfferEnable = dineinresult.data()!["isEnable"];
-        }
-      });
-
-      fireStore.collection(CollectionName.settings).doc("emailSetting").get().then((value) {
-        if (value.exists) {
-          Constant.mailSettings = MailSettings.fromJson(value.data()!);
-        }
-      });
-
-      fireStore.collection(CollectionName.settings).doc("ContactUs").get().then((time) {
-        if (time.exists) {
-          Constant.adminEmail = time.data()!["Email"];
-        }
-      });
-
       fireStore.collection(CollectionName.settings).doc("notification_setting").snapshots().listen((event) {
         if (event.exists) {
           Constant.senderId = event.data()?["projectId"];
           Constant.jsonNotificationFileURL = event.data()?["serviceJson"];
-        }
-      });
-
-      await fireStore.collection(CollectionName.settings).doc("document_verification_settings").get().then((value) {
-        Constant.isRestaurantVerification = value.data()!['isRestaurantVerification'];
-      });
-
-      fireStore.collection(CollectionName.settings).doc("privacyPolicy").get().then((event) {
-        if (event.exists) {
-          Constant.privacyPolicy = event.data()!["privacy_policy"];
-        }
-      });
-
-      fireStore.collection(CollectionName.settings).doc("termsAndConditions").get().then((event) {
-        if (event.exists) {
-          Constant.termsAndConditions = event.data()!["termsAndConditions"];
-        }
-      });
-
-      fireStore.collection(CollectionName.settings).doc("openai_settings").get().then((event) {
-        if (event.exists) {
-          Constant.openAIStatus = event.data()!["status"];
         }
       });
 
@@ -644,67 +727,157 @@ class FireStoreUtils {
   //   );
   // }
 
-  static Future<void> restaurantVendorWalletSet(OrderModel orderModel) async {
+  /// Net amount credited to restaurant for an order (after commission / tax / TDS).
+  static Future<double> calculateVendorPayoutAmount(OrderModel orderModel) async {
     double subTotal = 0.0;
-    double couponAmount = 0.0;
-    double specialDiscountAmount = 0.0;
-    double packagingCharge = 0.0;
-
-    /// ---------------- SUBTOTAL ----------------
     for (var element in orderModel.products!) {
-      final double price = (double.parse(element.discountPrice.toString()) > 0) ? double.parse(element.discountPrice.toString()) : double.parse(element.price.toString());
-
+      final double price = (double.parse(element.discountPrice.toString()) > 0)
+          ? double.parse(element.discountPrice.toString())
+          : double.parse(element.price.toString());
       final double qty = double.parse(element.quantity.toString());
       final double extras = double.parse(element.extrasPrice.toString());
-
       subTotal += (price * qty) + (extras * qty);
     }
 
-    // SPECIAL DISCOUNT
+    double specialDiscountAmount = 0.0;
     if (orderModel.specialDiscount?['special_discount'] != null) {
       specialDiscountAmount = double.tryParse(orderModel.specialDiscount!['special_discount'].toString()) ?? 0.0;
     }
+    final couponAmount = double.tryParse(orderModel.discount.toString()) ?? 0.0;
+    final packagingCharge = double.tryParse(orderModel.vendor?.packagingCharge.toString() ?? '0') ?? 0.0;
+    final netFoodSubtotal = subTotal - couponAmount - specialDiscountAmount;
 
-    couponAmount = double.tryParse(orderModel.discount.toString()) ?? 0.0;
-    packagingCharge = double.tryParse(orderModel.vendor?.packagingCharge.toString() ?? '0') ?? 0.0;
-
-    // ---------------- NET FOOD SUBTOTAL ----------------
-    // Food value after coupon + special discount, before any tax.
-    final double netFoodSubtotal = subTotal - couponAmount - specialDiscountAmount;
-
-    // ---------------- ADMIN COMMISSION AMOUNT ----------------
-    // Must match Order Summary: percent commission is inclusive
-    // (price already contains commission), not exclusive % of subtotal.
-    final double adminCommissionRaw = double.tryParse(orderModel.adminCommission ?? '0') ?? 0.0;
+    final adminCommissionRaw = double.tryParse(orderModel.adminCommission ?? '0') ?? 0.0;
     double adminCommissionAmount;
     if (orderModel.adminCommissionType == "Percent") {
       if (adminCommissionRaw > 0) {
-        final double basePrice = subTotal / (1 + (adminCommissionRaw / 100));
+        final basePrice = subTotal / (1 + (adminCommissionRaw / 100));
         adminCommissionAmount = subTotal - basePrice;
       } else {
         adminCommissionAmount = 0.0;
       }
     } else {
-      // Flat commission amount
       adminCommissionAmount = adminCommissionRaw;
     }
 
-    // ---------------- COMMISSION TAX (from admin_commission taxes, excluding TCS/TDS) ----------------
-    final double commissionTaxAmount = Constant.calculateAdminCommissionTax(adminCommissionAmount);
-
-    // ---------------- TDS/TCS on To Pay (net food + packaging) ----------------
+    final commissionTaxAmount = Constant.calculateAdminCommissionTax(adminCommissionAmount);
     String gstNumber = '';
     if (orderModel.vendor?.author != null && orderModel.vendor!.author!.isNotEmpty) {
       final owner = await getUserProfile(orderModel.vendor!.author!);
       gstNumber = owner?.userBankDetails?.gstNumber.trim() ?? '';
     }
-    final double orderTotal = netFoodSubtotal + packagingCharge;
-    final double tdsAmount = Constant.calculateTdsOrTcs(orderTotal, hasGst: gstNumber.isNotEmpty);
+    final orderTotal = netFoodSubtotal + packagingCharge;
+    final tdsAmount = Constant.calculateTdsOrTcs(orderTotal, hasGst: gstNumber.isNotEmpty);
+    return orderTotal - adminCommissionAmount - commissionTaxAmount - tdsAmount;
+  }
 
-    // ---------------- FINAL VENDOR PAYOUT ----------------
-    // To Pay - Admin Commission - Admin Commission Tax - TDS/TCS
-    final double finalVendorPayout = orderTotal - adminCommissionAmount - commissionTaxAmount - tdsAmount;
+  /// Prefer the original wallet credit for this order; fall back to calculated payout.
+  static Future<double> getVendorCreditedAmountForOrder(OrderModel orderModel) async {
+    final vendorId = orderModel.vendor?.author;
+    if (vendorId == null || vendorId.isEmpty || orderModel.id == null) {
+      return 0.0;
+    }
 
+    try {
+      final snap = await fireStore
+          .collection(CollectionName.wallet)
+          .where('order_id', isEqualTo: orderModel.id)
+          .where('user_id', isEqualTo: vendorId)
+          .get();
+
+      double credited = 0.0;
+      double alreadyReversed = 0.0;
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final note = (data['note'] ?? '').toString();
+        final amount = double.tryParse('${data['amount'] ?? 0}') ?? 0.0;
+        final isTopUp = data['isTopUp'] == true;
+        if (note == 'Order amount credited' && isTopUp) {
+          credited += amount;
+        }
+        if ((note == 'Order amount refunded to customer' || note == 'Order credit reversed on cancel') && isTopUp == false) {
+          alreadyReversed += amount;
+        }
+      }
+      final remaining = credited - alreadyReversed;
+      if (remaining > 0) return remaining;
+    } catch (e) {
+      log('getVendorCreditedAmountForOrder: $e');
+    }
+
+    // No credit found (e.g. cancelled before accept) → nothing to reverse
+    return 0.0;
+  }
+
+  /// Prefer original customer debit for this order; fall back to [fallbackAmount].
+  static Future<double> getCustomerDebitedAmountForOrder({
+    required OrderModel orderModel,
+    required double fallbackAmount,
+  }) async {
+    final customerId = orderModel.author?.id;
+    if (customerId == null || customerId.isEmpty || orderModel.id == null) {
+      return fallbackAmount;
+    }
+
+    try {
+      final snap = await fireStore
+          .collection(CollectionName.wallet)
+          .where('order_id', isEqualTo: orderModel.id)
+          .where('user_id', isEqualTo: customerId)
+          .get();
+
+      double debited = 0.0;
+      double alreadyRefunded = 0.0;
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final note = (data['note'] ?? '').toString();
+        final amount = double.tryParse('${data['amount'] ?? 0}') ?? 0.0;
+        final isTopUp = data['isTopUp'] == true;
+        if (note == 'Order Amount debited' && isTopUp == false) {
+          debited += amount;
+        }
+        if (note == 'Order Refund success' && isTopUp == true) {
+          alreadyRefunded += amount;
+        }
+      }
+      final remaining = debited - alreadyRefunded;
+      if (remaining > 0) return remaining;
+      if (debited > 0) return 0.0; // already fully refunded
+    } catch (e) {
+      log('getCustomerDebitedAmountForOrder: $e');
+    }
+    return fallbackAmount;
+  }
+
+  /// Reverse restaurant credit for a cancelled/rejected order (exact credited amount).
+  static Future<void> reverseVendorCreditForOrder(OrderModel orderModel) async {
+    final vendorId = orderModel.vendor?.author;
+    if (vendorId == null || vendorId.isEmpty) return;
+
+    final amount = await getVendorCreditedAmountForOrder(orderModel);
+    if (amount <= 0) {
+      log('No vendor credit to reverse for order ${orderModel.id}');
+      return;
+    }
+
+    final historyModel = WalletTransactionModel(
+      amount: amount,
+      id: const Uuid().v4(),
+      orderId: orderModel.id,
+      userId: vendorId,
+      date: Timestamp.now(),
+      isTopup: false,
+      paymentMethod: "Wallet",
+      paymentStatus: "success",
+      note: "Order credit reversed on cancel",
+      transactionUser: "vendor",
+    );
+    await fireStore.collection(CollectionName.wallet).doc(historyModel.id).set(historyModel.toJson());
+    await updateUserWallet(amount: (-amount).toString(), userId: vendorId);
+  }
+
+  static Future<void> restaurantVendorWalletSet(OrderModel orderModel) async {
+    final finalVendorPayout = await calculateVendorPayoutAmount(orderModel);
     final vendorId = orderModel.vendor!.author;
 
     // WALLET ENTRY -- FINAL NET PAYOUT ONLY.
@@ -747,17 +920,31 @@ class FireStoreUtils {
     return ratingModel;
   }
 
-  static Future<List<ProductModel>?> getProduct() async {
-    List<ProductModel> productList = [];
-    await fireStore.collection(CollectionName.vendorProducts).where('vendorID', isEqualTo: Constant.userModel!.vendorID).orderBy('createdAt', descending: false).get().then((value) {
-      for (var element in value.docs) {
-        ProductModel productModel = ProductModel.fromJson(element.data());
-        productList.add(productModel);
+  /// Loads the restaurant catalog via memory/disk → Redis CF → Firestore.
+  /// Includes unpublished. menuVersion bump is owned by onVendorProductWrite.
+  static Future<List<ProductModel>?> getProduct({bool forceRefresh = false}) async {
+    final vendorId = Constant.userModel?.vendorID;
+    if (vendorId == null || vendorId.isEmpty) {
+      return <ProductModel>[];
+    }
+
+    int? menuVersion;
+    try {
+      final vendorSnap =
+          await fireStore.collection(CollectionName.vendors).doc(vendorId).get();
+      final raw = vendorSnap.data()?['menuVersion'];
+      if (raw is int) {
+        menuVersion = raw;
+      } else {
+        menuVersion = int.tryParse(raw?.toString() ?? '');
       }
-    }).catchError((error) {
-      log(error.toString());
-    });
-    return productList;
+    } catch (_) {}
+
+    return MenuCacheRepository.instance.getMenu(
+      vendorId,
+      menuVersion: menuVersion,
+      forceRefresh: forceRefresh,
+    );
   }
 
   static Future<List<ProductModel>?> getAdminProduct() async {
@@ -803,9 +990,8 @@ class FireStoreUtils {
       log("Failed to update user: $error");
       isUpdate = false;
     });
-    if (isUpdate) {
-      await bumpVendorMenuVersion(productModel.vendorID);
-    }
+    // menuVersion + Redis menu invalidation: Cloud Function onVendorProductWrite only
+    // (avoid double-bump with client-side increment).
     return isUpdate;
   }
 
@@ -817,26 +1003,14 @@ class FireStoreUtils {
       log("Failed to update user: $error");
       isUpdate = false;
     });
-    if (isUpdate) {
-      await bumpVendorMenuVersion(productModel.vendorID);
-    }
+    // menuVersion bumped by onVendorProductWrite Cloud Function only.
     return isUpdate;
   }
 
-  /// Atomic menu cache invalidation signal for customer apps.
-  /// Uses FieldValue.increment — no vendor document read required.
+  /// Deprecated: menuVersion is owned by Cloud Function `onVendorProductWrite`.
+  /// Kept as a no-op so any residual call sites compile without double-bumping.
   static Future<void> bumpVendorMenuVersion(String? vendorId) async {
-    final id = vendorId?.isNotEmpty == true ? vendorId : Constant.userModel?.vendorID;
-    if (id == null || id.isEmpty) return;
-    try {
-      await fireStore.collection(CollectionName.vendors).doc(id).update({
-        'menuVersion': FieldValue.increment(1),
-        'menuUpdatedAt': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      // Vendor may not exist yet during onboarding; non-fatal for product write.
-      log('bumpVendorMenuVersion failed: $e');
-    }
+    log('bumpVendorMenuVersion skipped (CF onVendorProductWrite is authoritative); vendorId=$vendorId');
   }
 
   static Future<List<WalletTransactionModel>?> getWalletTransaction() async {
@@ -1601,9 +1775,7 @@ class FireStoreUtils {
       log("Failed to update user: $error");
       isAdded = false;
     });
-    if (isAdded) {
-      await bumpVendorMenuVersion(orderModel.vendorID);
-    }
+    // menuVersion bumped by onVendorProductWrite Cloud Function only.
     return isAdded;
   }
 

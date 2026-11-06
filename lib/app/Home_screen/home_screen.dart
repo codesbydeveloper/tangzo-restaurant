@@ -441,12 +441,16 @@ class HomeScreen extends StatelessWidget {
     /// ---------------- FINAL TOTAL ----------------
     totalAmount = (subTotal - totalDiscount) + packagingCharge;
 
+    // Customer refund must match full amount customer paid (all taxes + fees + delivery).
     if (orderModel.paymentMethod!.toLowerCase() != 'cod') {
-      if (orderModel.isFreeDelivery == true) {
-        totalRejectAmount = totalAmount + platformFee + platformTaxAmount;
-      } else {
-        totalRejectAmount = totalAmount + platformFee + platformTaxAmount + driverDeliveryTaxAmount + (orderModel.isFreeDelivery == false ? deliveryCharges + deliveryTips : 0);
-      }
+      totalRejectAmount = totalAmount +
+          productTaxAmount +
+          orderTaxAmount +
+          packagingTaxAmount +
+          platformFee +
+          platformTaxAmount +
+          driverDeliveryTaxAmount +
+          (orderModel.isFreeDelivery == true ? 0 : (deliveryCharges + deliveryTips));
     }
 
     if (orderModel.adminCommissionType == 'Percent') {
@@ -914,19 +918,25 @@ class HomeScreen extends StatelessWidget {
                               await FireStoreUtils.updateOrder(orderModel);
                               SendNotification.sendFcmMessage(Constant.restaurantRejected, orderModel.author!.fcmToken.toString(), {});
                               if (orderModel.paymentMethod!.toLowerCase() != 'cod') {
-                                WalletTransactionModel historyDataModel = WalletTransactionModel(
-                                    amount: totalRejectAmount,
-                                    id: const Uuid().v4(),
-                                    orderId: orderModel.id,
-                                    userId: orderModel.author!.id,
-                                    date: Timestamp.now(),
-                                    isTopup: true,
-                                    paymentMethod: "Wallet",
-                                    paymentStatus: "success",
-                                    note: "Order Refund success",
-                                    transactionUser: "user");
-                                await FireStoreUtils.fireStore.collection(CollectionName.wallet).doc(historyDataModel.id).set(historyDataModel.toJson());
-                                await FireStoreUtils.updateUserWallet(amount: totalRejectAmount.toString(), userId: orderModel.author!.id.toString());
+                                final refundAmount = await FireStoreUtils.getCustomerDebitedAmountForOrder(
+                                  orderModel: orderModel,
+                                  fallbackAmount: totalRejectAmount,
+                                );
+                                if (refundAmount > 0) {
+                                  WalletTransactionModel historyDataModel = WalletTransactionModel(
+                                      amount: refundAmount,
+                                      id: const Uuid().v4(),
+                                      orderId: orderModel.id,
+                                      userId: orderModel.author!.id,
+                                      date: Timestamp.now(),
+                                      isTopup: true,
+                                      paymentMethod: "Wallet",
+                                      paymentStatus: "success",
+                                      note: "Order Refund success",
+                                      transactionUser: "user");
+                                  await FireStoreUtils.fireStore.collection(CollectionName.wallet).doc(historyDataModel.id).set(historyDataModel.toJson());
+                                  await FireStoreUtils.updateUserWallet(amount: refundAmount.toString(), userId: orderModel.author!.id.toString());
+                                }
                               }
                               ShowToastDialog.closeLoader();
                               controller.getOrder();
@@ -1178,12 +1188,16 @@ class HomeScreen extends StatelessWidget {
     /// ---------------- FINAL TOTAL ----------------
     totalAmount = (subTotal - totalDiscount) + packagingCharge;
 
+    // Customer refund must match full amount customer paid (all taxes + fees + delivery).
     if (orderModel.paymentMethod!.toLowerCase() != 'cod') {
-      if (orderModel.isFreeDelivery == true) {
-        totalRejectAmount = totalAmount + platformFee + platformTaxAmount;
-      } else {
-        totalRejectAmount = totalAmount + platformFee + platformTaxAmount + driverDeliveryTaxAmount + (orderModel.isFreeDelivery == false ? deliveryCharges + deliveryTips : 0);
-      }
+      totalRejectAmount = totalAmount +
+          productTaxAmount +
+          orderTaxAmount +
+          packagingTaxAmount +
+          platformFee +
+          platformTaxAmount +
+          driverDeliveryTaxAmount +
+          (orderModel.isFreeDelivery == true ? 0 : (deliveryCharges + deliveryTips));
     }
 
     if (orderModel.adminCommissionType == 'Percent') {
@@ -1647,54 +1661,30 @@ class HomeScreen extends StatelessWidget {
                                 SendNotification.sendFcmMessage(Constant.restaurantCancelled, orderModel.author!.fcmToken.toString(), {});
 
                                 if (orderModel.paymentMethod!.toLowerCase() != 'cod') {
-                                  double taxModelAmount = orderTaxAmount + productTaxAmount + packagingTaxAmount;
-                                  WalletTransactionModel historyTaxModel = WalletTransactionModel(
-                                      amount: taxModelAmount,
-                                      id: const Uuid().v4(),
-                                      orderId: orderModel.id,
-                                      userId: FireStoreUtils.getCurrentUid(),
-                                      date: Timestamp.now(),
-                                      isTopup: false,
-                                      paymentMethod: "tax",
-                                      paymentStatus: "success",
-                                      note: "Order tax refunded to customer",
-                                      transactionUser: "vendor");
-                                  await FireStoreUtils.fireStore.collection(CollectionName.wallet).doc(historyTaxModel.id).set(historyTaxModel.toJson());
-                                  double basePrice;
-                                  final adminCommission = double.tryParse(orderModel.adminCommission ?? '0') ?? 0.0;
-                                  if (Constant.adminCommission?.isEnabled == true) {
-                                    basePrice = (subTotal / (1 + (adminCommission / 100))) - couponAmount - specialDiscountAmount + double.parse(orderModel.vendor?.packagingCharge ?? '0.0');
-                                  } else {
-                                    basePrice = subTotal - couponAmount - specialDiscountAmount + double.parse(orderModel.vendor?.packagingCharge ?? '0.0');
-                                  }
-                                  WalletTransactionModel historyModel = WalletTransactionModel(
-                                      amount: basePrice,
-                                      id: const Uuid().v4(),
-                                      orderId: orderModel.id,
-                                      userId: FireStoreUtils.getCurrentUid(),
-                                      date: Timestamp.now(),
-                                      isTopup: false,
-                                      paymentMethod: "Wallet",
-                                      paymentStatus: "success",
-                                      note: "Order amount refunded to customer",
-                                      transactionUser: "vendor");
-                                  await FireStoreUtils.fireStore.collection(CollectionName.wallet).doc(historyModel.id).set(historyModel.toJson());
-                                  double walletAmount = taxModelAmount + basePrice;
-                                  await FireStoreUtils.updateUserWallet(amount: (-walletAmount).toString(), userId: FireStoreUtils.getCurrentUid().toString());
-                                  WalletTransactionModel historyDataModel = WalletTransactionModel(
-                                      amount: totalRejectAmount,
-                                      id: const Uuid().v4(),
-                                      orderId: orderModel.id,
-                                      userId: orderModel.author!.id,
-                                      date: Timestamp.now(),
-                                      isTopup: true,
-                                      paymentMethod: "Wallet",
-                                      paymentStatus: "success",
-                                      note: "Order Refund success",
-                                      transactionUser: "user");
+                                  // Reverse exact restaurant credit (same amount that was credited).
+                                  await FireStoreUtils.reverseVendorCreditForOrder(orderModel);
 
-                                  await FireStoreUtils.fireStore.collection(CollectionName.wallet).doc(historyDataModel.id).set(historyDataModel.toJson());
-                                  await FireStoreUtils.updateUserWallet(amount: totalRejectAmount.toString(), userId: orderModel.author!.id.toString());
+                                  // Refund exact customer debit (same amount that was debited).
+                                  final refundAmount = await FireStoreUtils.getCustomerDebitedAmountForOrder(
+                                    orderModel: orderModel,
+                                    fallbackAmount: totalRejectAmount,
+                                  );
+                                  if (refundAmount > 0) {
+                                    WalletTransactionModel historyDataModel = WalletTransactionModel(
+                                        amount: refundAmount,
+                                        id: const Uuid().v4(),
+                                        orderId: orderModel.id,
+                                        userId: orderModel.author!.id,
+                                        date: Timestamp.now(),
+                                        isTopup: true,
+                                        paymentMethod: "Wallet",
+                                        paymentStatus: "success",
+                                        note: "Order Refund success",
+                                        transactionUser: "user");
+
+                                    await FireStoreUtils.fireStore.collection(CollectionName.wallet).doc(historyDataModel.id).set(historyDataModel.toJson());
+                                    await FireStoreUtils.updateUserWallet(amount: refundAmount.toString(), userId: orderModel.author!.id.toString());
+                                  }
                                 }
 
                                 ShowToastDialog.closeLoader();

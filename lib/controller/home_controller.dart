@@ -85,28 +85,43 @@ class HomeController extends GetxController {
     isLoading.value = false;
   }
 
+  /// Bound live board so historical orders are not streamed forever.
+  /// Uses existing vendorID+createdAt index (no new composite required).
+  static const int _liveOrderLimit = 100;
+
   Future<void> getOrder() async {
-    FireStoreUtils.fireStore.collection(CollectionName.restaurantOrders).where('vendorID', isEqualTo: Constant.userModel!.vendorID).orderBy('createdAt', descending: true).snapshots().listen(
+    FireStoreUtils.fireStore
+        .collection(CollectionName.restaurantOrders)
+        .where('vendorID', isEqualTo: Constant.userModel!.vendorID)
+        .orderBy('createdAt', descending: true)
+        .limit(_liveOrderLimit)
+        .snapshots()
+        .listen(
       (event) async {
         allOrderList.clear();
         for (var element in event.docs) {
-          OrderModel orderModel = OrderModel.fromJson(element.data());
-          allOrderList.add(orderModel);
-          newOrderList.value = allOrderList.where((p0) => p0.status == Constant.orderPlaced).toList();
-          acceptedOrderList.value = allOrderList
-              .where((p0) =>
-                  p0.status == Constant.orderAccepted ||
-                  p0.status == Constant.driverAccepted ||
-                  p0.status == Constant.driverPending ||
-                  p0.status == Constant.driverRejected ||
-                  p0.status == Constant.orderShipped ||
-                  p0.status == Constant.orderInTransit)
-              .toList();
-          completedOrderList.value = allOrderList.where((p0) => p0.status == Constant.orderCompleted).toList();
-          rejectedOrderList.value = allOrderList.where((p0) => p0.status == Constant.orderRejected).toList();
-          cancelledOrderList.value = allOrderList.where((p0) => p0.status == Constant.orderCancelled).toList();
-          update();
+          allOrderList.add(OrderModel.fromJson(element.data()));
         }
+
+        // Recompute status buckets once per snapshot (not inside the doc loop).
+        newOrderList.value =
+            allOrderList.where((p0) => p0.status == Constant.orderPlaced).toList();
+        acceptedOrderList.value = allOrderList
+            .where((p0) =>
+                p0.status == Constant.orderAccepted ||
+                p0.status == Constant.driverAccepted ||
+                p0.status == Constant.driverPending ||
+                p0.status == Constant.driverRejected ||
+                p0.status == Constant.orderShipped ||
+                p0.status == Constant.orderInTransit)
+            .toList();
+        completedOrderList.value =
+            allOrderList.where((p0) => p0.status == Constant.orderCompleted).toList();
+        rejectedOrderList.value =
+            allOrderList.where((p0) => p0.status == Constant.orderRejected).toList();
+        cancelledOrderList.value =
+            allOrderList.where((p0) => p0.status == Constant.orderCancelled).toList();
+        update();
 
         if (newOrderList.isNotEmpty == true) {
           if (newOrderList.every((element) => element.scheduleTime == null)) {

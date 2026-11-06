@@ -208,8 +208,15 @@ class OrderDetailsController extends GetxController {
 
     /// ---------------- FINAL TOTAL ----------------
     totalAmount.value = (subTotal.value - totalDiscount) + packagingCharge.value;
-    totalRejectAmount.value =
-        totalAmount.value + platformFee.value + platformTaxAmount.value + driverDeliveryTaxAmount.value + (orderModel.value.isFreeDelivery == false ? deliveryCharges.value + deliveryTips.value : 0);
+    // Must match full customer payable (same as wallet debit).
+    totalRejectAmount.value = totalAmount.value +
+        productTaxAmount.value +
+        orderTaxAmount.value +
+        packagingTaxAmount.value +
+        platformFee.value +
+        platformTaxAmount.value +
+        driverDeliveryTaxAmount.value +
+        (orderModel.value.isFreeDelivery == true ? 0 : (deliveryCharges.value + deliveryTips.value));
 
     /// ---------------- ADMIN COMMISSION ----------------
     final double commissionRaw = double.tryParse(orderModel.value.adminCommission ?? '0') ?? 0.0;
