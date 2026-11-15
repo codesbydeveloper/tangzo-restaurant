@@ -1734,7 +1734,10 @@ class HomeScreen extends StatelessWidget {
                                     },
                                   )
                                 : RoundedButtonFill(
-                                    title: orderModel.status.toString(),
+                                    title: Constant.statusDisplayLabel(
+                                      status: orderModel.status.toString(),
+                                      deliveryPartner: orderModel.deliveryPartner,
+                                    ),
                                     color: AppThemeData.secondary300,
                                     textColor: AppThemeData.grey50,
                                     height: 5,
@@ -2207,8 +2210,13 @@ class HomeScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: RoundedButtonFill(
-                    title: orderModel.status.toString(),
-                    color: orderModel.status == Constant.orderRejected ? AppThemeData.danger300 : AppThemeData.secondary300,
+                    title: Constant.statusDisplayLabel(
+                      status: orderModel.status.toString(),
+                      deliveryPartner: orderModel.deliveryPartner,
+                    ),
+                    color: orderModel.status == Constant.orderRejected
+                        ? AppThemeData.danger300
+                        : Constant.statusColor(status: orderModel.status),
                     textColor: AppThemeData.grey50,
                     height: 5,
                     onPress: () async {},
