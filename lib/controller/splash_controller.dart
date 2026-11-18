@@ -37,8 +37,12 @@ class SplashController extends GetxController {
                 Constant.userModel = value;
                 if (Constant.userModel?.role == Constant.userRoleVendor) {
                   if (Constant.userModel?.active == true) {
-                    Constant.userModel?.fcmToken = await NotificationService.getToken();
-                    await FireStoreUtils.updateUser(Constant.userModel!);
+                    final token = await NotificationService.getToken();
+                    Constant.userModel?.fcmToken = token;
+                    await FireStoreUtils.updateFcmTokenIfChanged(
+                      userId: Constant.userModel?.id ?? FireStoreUtils.getCurrentUid(),
+                      token: token,
+                    );
                     VendorNavigation.goAfterAuth(Constant.userModel!);
                   } else {
                     await FirebaseAuth.instance.signOut();
@@ -46,8 +50,12 @@ class SplashController extends GetxController {
                   }
                 } else if (Constant.userModel?.role == Constant.userRoleEmployee) {
                   if (Constant.userModel?.active == true) {
-                    Constant.userModel?.fcmToken = await NotificationService.getToken();
-                    await FireStoreUtils.updateUser(Constant.userModel!);
+                    final token = await NotificationService.getToken();
+                    Constant.userModel?.fcmToken = token;
+                    await FireStoreUtils.updateFcmTokenIfChanged(
+                      userId: Constant.userModel?.id ?? FireStoreUtils.getCurrentUid(),
+                      token: token,
+                    );
                     VendorModel? vendor = await FireStoreUtils.getVendorById(Constant.userModel!.vendorID!);
                     bool isPlanExpire = false;
                     if (vendor?.subscriptionPlan?.id != null) {

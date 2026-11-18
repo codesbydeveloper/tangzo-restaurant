@@ -34,6 +34,8 @@ class CollectionName {
   static const String subscriptionHistory = "subscription_history";
   static const String advertisements = "advertisements";
   static const String cashbackRedeem = "cashback_redeem";
+  static const String driverCashback = "driver_cashback";
+  static const String driverCashbackRedeem = "driver_cashback_redeem";
   static const String chat = "chat";
   static const String vendorEmployeeRoles = "vendor_employee_roles";
   static const String adminProducts = "admin_products";

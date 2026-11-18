@@ -118,17 +118,9 @@ class Constant {
   static const String orderCompleted = "Order Completed";
   static const String noRiderAvailable = "No Rider Available";
 
-  static const String deliveryPartnerShadowfax = "shadowfax";
-  static const String deliveryPartnerShadowfaxPending = "shadowfax_pending";
-
-  static bool isShadowfaxPartner(String? deliveryPartner) {
-    return deliveryPartner == deliveryPartnerShadowfax ||
-        deliveryPartner == deliveryPartnerShadowfaxPending;
-  }
-
-  /// Restaurant-facing label — No Rider / pending is NOT cancelled.
-  static String statusDisplayLabel({required String? status, String? deliveryPartner}) {
-    if (status == noRiderAvailable || deliveryPartner == deliveryPartnerShadowfaxPending) {
+  /// Restaurant-facing label — No Rider is NOT cancelled.
+  static String statusDisplayLabel({required String? status}) {
+    if (status == noRiderAvailable) {
       return "Waiting for delivery partner";
     }
     return status ?? "";

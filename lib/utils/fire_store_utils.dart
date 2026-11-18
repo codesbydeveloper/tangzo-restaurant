@@ -18,6 +18,8 @@ import 'package:restaurant/models/AttributesModel.dart';
 import 'package:restaurant/models/admin_commission.dart';
 import 'package:restaurant/models/advertisement_model.dart';
 import 'package:restaurant/models/conversation_model.dart';
+import 'package:restaurant/models/driver_cashback_model.dart';
+import 'package:restaurant/models/driver_cashback_redeem_model.dart';
 import 'package:restaurant/models/dine_in_booking_model.dart';
 import 'package:restaurant/models/document_model.dart';
 import 'package:restaurant/models/driver_document_model.dart';
@@ -183,6 +185,27 @@ class FireStoreUtils {
     return isUpdate;
   }
 
+  /// Avoid full-document set() on every splash when FCM token is unchanged.
+  static Future<void> updateFcmTokenIfChanged({
+    required String userId,
+    required String? token,
+  }) async {
+    if (userId.isEmpty || token == null || token.isEmpty) return;
+    try {
+      final ref = fireStore.collection(CollectionName.users).doc(userId);
+      final snap = await ref.get();
+      if (!snap.exists) return;
+      final current = snap.data()?['fcmToken']?.toString();
+      if (current == token) return;
+      await ref.update({'fcmToken': token});
+      if (Constant.userModel?.id == userId) {
+        Constant.userModel!.fcmToken = token;
+      }
+    } catch (e) {
+      log('updateFcmTokenIfChanged: $e');
+    }
+  }
+
   static Future<bool> updateDriverUser(UserModel userModel) async {
     bool isUpdate = false;
     await fireStore.collection(CollectionName.users).doc(userModel.id).set(userModel.toJson()).whenComplete(() {
@@ -231,227 +254,180 @@ class FireStoreUtils {
 
   static Future<void> getSettings() async {
     try {
-      final bundle = await SettingsApi.getBundle();
-      // ignore: unawaited_futures
-      SettingsApi.refreshInBackground();
+      var bundle = await SettingsApi.getBundle();
+      if (bundle == null || bundle.docs.isEmpty) {
+        bundle = await SettingsApi.raceBundle(
+          firestoreLoader: _fetchRestaurantSettingsDocs,
+        );
+      }
       if (bundle != null && bundle.docs.isNotEmpty) {
-        final docs = bundle.docs;
-        final global = docs['globalSettings'];
-        if (global != null) {
-          Constant.defaultCountryCode = global['defaultCountryCode'] ?? '';
-          Constant.orderRingtoneUrl = global['order_ringtone_url'] ?? '';
-          Preferences.setString(Preferences.orderRingtone, Constant.orderRingtoneUrl);
-          final color = global['app_restaurant_color']?.toString();
-          if (color != null && color.isNotEmpty) {
-            AppThemeData.secondary300 =
-                Color(int.parse(color.replaceFirst("#", "0xff")));
-          }
-          Constant.isEnableAdsFeature = global['isEnableAdsFeature'] ?? false;
-          Constant.isSelfDeliveryFeature = global['isSelfDelivery'] ?? false;
-          Constant.apiSecureKey = global['apiSecureKey'] ?? "";
-          Constant.apiBaseUrl = global['apiBaseUrl'] ?? "";
-          Constant.taxScope = global['taxScope'] ?? "";
-          if (Constant.orderRingtoneUrl.isNotEmpty) {
-            await AudioPlayerService.initAudio();
-          }
-        }
-        final restaurant = docs['restaurant'];
-        if (restaurant != null) {
-          Constant.isEmployeeManagement = restaurant['isEmployeeManagement'] ?? false;
-          Constant.autoApproveRestaurant = restaurant['auto_approve_restaurant'];
-          Constant.isSubscriptionModelApplied = restaurant['subscription_model'];
-          Constant.packagingChargeEnable = restaurant['packagingChargeEnable'] ?? false;
-        }
-        final driverNear = docs['DriverNearBy'];
-        if (driverNear != null) {
-          Constant.selectedMapType = driverNear['selectedMapType'];
-          Constant.singleOrderReceive = driverNear['singleOrderReceive'];
-        }
-        final schedule = docs['scheduleOrderNotification'];
-        if (schedule != null) {
-          Constant.scheduleOrderTime = schedule['notifyTime'];
-          Constant.scheduleOrderTimeType = schedule['timeUnit'];
-        }
-        final dinein = docs['DineinForRestaurant'];
-        if (dinein != null) Constant.isDineInEnable = dinein['isEnabled'];
-        final adminCommission = docs['AdminCommission'];
-        if (adminCommission != null) {
-          Constant.adminCommission = AdminCommission.fromJson(adminCommission);
-        }
-        final mapKey = docs['googleMapKey'];
-        if (mapKey != null) {
-          Constant.mapAPIKey = mapKey['key'];
-          Constant.placeHolderImage = mapKey['placeHolderImage']?.toString() ?? '';
-        }
-        final story = docs['story'];
-        if (story != null) Constant.storyEnable = story['isEnabled'];
-        final placeholder = docs['placeHolderImage'];
-        if (placeholder != null) {
-          Constant.placeholderImage = placeholder['image']?.toString() ?? '';
-        }
-        // Keep both placeholder fields in sync for NetworkImageWidget fallbacks.
-        if (Constant.placeholderImage.isEmpty &&
-            Constant.placeHolderImage.isNotEmpty) {
-          Constant.placeholderImage = Constant.placeHolderImage;
-        } else if (Constant.placeHolderImage.isEmpty &&
-            Constant.placeholderImage.isNotEmpty) {
-          Constant.placeHolderImage = Constant.placeholderImage;
-        }
-        final version = docs['Version'];
-        if (version != null) {
-          Constant.googlePlayLink = version['googlePlayLink'] ?? '';
-          Constant.appStoreLink = version['appStoreLink'] ?? '';
-          Constant.appVersion = version['app_version'] ?? '';
-          Constant.storeUrl = version['storeUrl'] ?? '';
-        }
-        final nearby = docs['RestaurantNearBy'];
-        if (nearby != null) Constant.distanceType = nearby['distanceType'];
-        final special = docs['specialDiscountOffer'];
-        if (special != null) {
-          Constant.specialDiscountOfferEnable = special['isEnable'];
-        }
-        final email = docs['emailSetting'];
-        if (email != null) Constant.mailSettings = MailSettings.fromJson(email);
-        final contact = docs['ContactUs'];
-        if (contact != null) Constant.adminEmail = contact['Email'];
-        final notif = docs['notification_setting'];
-        if (notif != null) {
-          Constant.senderId = notif['projectId'];
-          Constant.jsonNotificationFileURL = notif['serviceJson'];
-        }
-        final docVer = docs['document_verification_settings'];
-        if (docVer != null) {
-          Constant.isRestaurantVerification = docVer['isRestaurantVerification'];
-        }
-        final privacy = docs['privacyPolicy'];
-        if (privacy != null) Constant.privacyPolicy = privacy['privacy_policy'];
-        final terms = docs['termsAndConditions'];
-        if (terms != null) {
-          Constant.termsAndConditions = terms['termsAndConditions'];
-        }
-        final openai = docs['openai_settings'];
-        if (openai != null) Constant.openAIStatus = openai['status'];
-        final localisation = docs['localisationSettings'];
-        if (localisation != null) {
-          Constant.apiKeyOfDeepl = localisation['apiKeyOfDeepl'] ?? '';
-          Constant.localisationType = localisation['localisationType'] ?? '';
-        }
+        await _applyRestaurantSettingsDocs(bundle.docs);
+        SettingsApi.markApplied(bundle);
       } else {
-        await fireStore.collection(CollectionName.settings).doc("globalSettings").get().then((value) async {
-          Constant.defaultCountryCode = value.data()?["defaultCountryCode"] ?? '';
-          Constant.orderRingtoneUrl = value.data()?['order_ringtone_url'] ?? '';
-          Preferences.setString(Preferences.orderRingtone, Constant.orderRingtoneUrl);
-          AppThemeData.secondary300 = Color(int.parse(value.data()!['app_restaurant_color'].replaceFirst("#", "0xff")));
-          Constant.isEnableAdsFeature = value.data()?['isEnableAdsFeature'] ?? false;
-          Constant.isSelfDeliveryFeature = value.data()?['isSelfDelivery'] ?? false;
-          Constant.apiSecureKey = value.data()?['apiSecureKey'] ?? "";
-          Constant.apiBaseUrl = value.data()?['apiBaseUrl'] ?? "";
-          Constant.taxScope = value.data()?['taxScope'] ?? "";
-          if (Constant.orderRingtoneUrl.isNotEmpty) {
-            await AudioPlayerService.initAudio();
-          }
-        });
-        await fireStore.collection(CollectionName.settings).doc('restaurant').get().then((value) {
-          Constant.isEmployeeManagement = value.data()?['isEmployeeManagement'] ?? false;
-          Constant.autoApproveRestaurant = value.data()!['auto_approve_restaurant'];
-          Constant.isSubscriptionModelApplied = value.data()!['subscription_model'];
-          Constant.packagingChargeEnable = value.data()!['packagingChargeEnable'] ?? false;
-        });
-        fireStore.collection(CollectionName.settings).doc("DriverNearBy").get().then((event) {
-          if (event.exists) {
-            Constant.selectedMapType = event.data()!["selectedMapType"];
-            Constant.singleOrderReceive = event.data()!['singleOrderReceive'];
-          }
-        });
-        fireStore.collection(CollectionName.settings).doc("scheduleOrderNotification").get().then((time) {
-          if (time.exists) {
-            Constant.scheduleOrderTime = time.data()!["notifyTime"];
-            Constant.scheduleOrderTimeType = time.data()!["timeUnit"];
-          }
-        });
-        fireStore.collection(CollectionName.settings).doc("DineinForRestaurant").get().then((dineinresult) {
-          if (dineinresult.exists) {
-            Constant.isDineInEnable = dineinresult.data()!["isEnabled"];
-          }
-        });
-        await fireStore.collection(CollectionName.settings).doc("AdminCommission").get().then((value) {
-          if (value.data() != null) {
-            Constant.adminCommission = AdminCommission.fromJson(value.data()!);
-          }
-        });
-        fireStore.collection(CollectionName.settings).doc('story').get().then((value) {
-          Constant.storyEnable = value.data()!['isEnabled'];
-        });
-        fireStore.collection(CollectionName.settings).doc('placeHolderImage').get().then((value) {
-          Constant.placeholderImage = value.data()!['image'];
-        });
-        fireStore.collection(CollectionName.settings).doc("specialDiscountOffer").get().then((dineinresult) {
-          if (dineinresult.exists) {
-            Constant.specialDiscountOfferEnable = dineinresult.data()!["isEnable"];
-          }
-        });
-        fireStore.collection(CollectionName.settings).doc("emailSetting").get().then((value) {
-          if (value.exists) {
-            Constant.mailSettings = MailSettings.fromJson(value.data()!);
-          }
-        });
-        fireStore.collection(CollectionName.settings).doc("ContactUs").get().then((time) {
-          if (time.exists) {
-            Constant.adminEmail = time.data()!["Email"];
-          }
-        });
-        await fireStore.collection(CollectionName.settings).doc("document_verification_settings").get().then((value) {
-          Constant.isRestaurantVerification = value.data()!['isRestaurantVerification'];
-        });
-        fireStore.collection(CollectionName.settings).doc("privacyPolicy").get().then((event) {
-          if (event.exists) {
-            Constant.privacyPolicy = event.data()!["privacy_policy"];
-          }
-        });
-        fireStore.collection(CollectionName.settings).doc("termsAndConditions").get().then((event) {
-          if (event.exists) {
-            Constant.termsAndConditions = event.data()!["termsAndConditions"];
-          }
-        });
-        fireStore.collection(CollectionName.settings).doc("openai_settings").get().then((event) {
-          if (event.exists) {
-            Constant.openAIStatus = event.data()!["status"];
-          }
-        });
+        await _applyRestaurantSettingsDocs(await _fetchRestaurantSettingsDocs());
       }
 
-      fireStore.collection(CollectionName.settings).doc("localisationSettings").snapshots().listen((event) async {
-        if (event.exists) {
-          Constant.apiKeyOfDeepl = event.data()?["apiKeyOfDeepl"] ?? '';
-          Constant.localisationType = event.data()?["localisationType"] ?? '';
-        }
-      });
-      fireStore.collection(CollectionName.settings).doc("googleMapKey").snapshots().listen((event) {
-        if (event.exists) {
-          Constant.mapAPIKey = event.data()!["key"];
-          Constant.placeHolderImage = event.data()!["placeHolderImage"];
-        }
-      });
-      fireStore.collection(CollectionName.settings).doc("Version").snapshots().listen((event) {
-        if (event.exists) {
-          Constant.googlePlayLink = event.data()!["googlePlayLink"] ?? '';
-          Constant.appStoreLink = event.data()!["appStoreLink"] ?? '';
-          Constant.appVersion = event.data()!["app_version"] ?? '';
-          Constant.storeUrl = event.data()!["storeUrl"] ?? '';
-        }
-      });
-      fireStore.collection(CollectionName.settings).doc("notification_setting").snapshots().listen((event) {
-        if (event.exists) {
-          Constant.senderId = event.data()?["projectId"];
-          Constant.jsonNotificationFileURL = event.data()?["serviceJson"];
-        }
-      });
+      // ignore: unawaited_futures
+      SettingsApi.refreshInBackground(
+        onFresh: (fresh) async {
+          await _applyRestaurantSettingsDocs(fresh.docs);
+          SettingsApi.markApplied(fresh);
+        },
+      );
 
-      await fireStore.collection(CollectionName.tax).where('enable', isEqualTo: true).where('scope', isEqualTo: 'admin_commission').get().then((value) {
-        Constant.adminCommissionTaxList = value.docs.map((doc) => TaxModel.fromJson(doc.data())).toList();
+      // Admin-commission taxes: one-shot (not continuous listener).
+      await fireStore
+          .collection(CollectionName.tax)
+          .where('enable', isEqualTo: true)
+          .where('scope', isEqualTo: 'admin_commission')
+          .get()
+          .then((value) {
+        Constant.adminCommissionTaxList =
+            value.docs.map((doc) => TaxModel.fromJson(doc.data())).toList();
       });
     } catch (e) {
       log(e.toString());
+    }
+  }
+
+  static Future<Map<String, Map<String, dynamic>?>>
+      _fetchRestaurantSettingsDocs() async {
+    const ids = [
+      'globalSettings',
+      'restaurant',
+      'DriverNearBy',
+      'scheduleOrderNotification',
+      'DineinForRestaurant',
+      'AdminCommission',
+      'googleMapKey',
+      'story',
+      'placeHolderImage',
+      'Version',
+      'RestaurantNearBy',
+      'specialDiscountOffer',
+      'emailSetting',
+      'ContactUs',
+      'notification_setting',
+      'document_verification_settings',
+      'privacyPolicy',
+      'termsAndConditions',
+      'openai_settings',
+      'localisationSettings',
+    ];
+    final snaps = await Future.wait(
+      ids.map((id) => fireStore.collection(CollectionName.settings).doc(id).get()),
+    );
+    final docs = <String, Map<String, dynamic>?>{};
+    for (var i = 0; i < ids.length; i++) {
+      docs[ids[i]] = snaps[i].data();
+    }
+    return docs;
+  }
+
+  static Future<void> _applyRestaurantSettingsDocs(
+    Map<String, Map<String, dynamic>?> docs,
+  ) async {
+    final global = docs['globalSettings'];
+    if (global != null) {
+      Constant.defaultCountryCode = global['defaultCountryCode'] ?? '';
+      Constant.orderRingtoneUrl = global['order_ringtone_url'] ?? '';
+      Preferences.setString(Preferences.orderRingtone, Constant.orderRingtoneUrl);
+      final color = global['app_restaurant_color']?.toString();
+      if (color != null && color.isNotEmpty) {
+        AppThemeData.secondary300 =
+            Color(int.parse(color.replaceFirst("#", "0xff")));
+      }
+      Constant.isEnableAdsFeature = global['isEnableAdsFeature'] ?? false;
+      Constant.isSelfDeliveryFeature = global['isSelfDelivery'] ?? false;
+      Constant.apiSecureKey = global['apiSecureKey'] ?? "";
+      Constant.apiBaseUrl = global['apiBaseUrl'] ?? "";
+      Constant.taxScope = global['taxScope'] ?? "";
+      if (Constant.orderRingtoneUrl.isNotEmpty) {
+        await AudioPlayerService.initAudio();
+      }
+    }
+    final restaurant = docs['restaurant'];
+    if (restaurant != null) {
+      Constant.isEmployeeManagement =
+          restaurant['isEmployeeManagement'] ?? false;
+      Constant.autoApproveRestaurant = restaurant['auto_approve_restaurant'];
+      Constant.isSubscriptionModelApplied = restaurant['subscription_model'];
+      Constant.packagingChargeEnable =
+          restaurant['packagingChargeEnable'] ?? false;
+    }
+    final driverNear = docs['DriverNearBy'];
+    if (driverNear != null) {
+      Constant.selectedMapType = driverNear['selectedMapType'];
+      Constant.singleOrderReceive = driverNear['singleOrderReceive'];
+    }
+    final schedule = docs['scheduleOrderNotification'];
+    if (schedule != null) {
+      Constant.scheduleOrderTime = schedule['notifyTime'];
+      Constant.scheduleOrderTimeType = schedule['timeUnit'];
+    }
+    final dinein = docs['DineinForRestaurant'];
+    if (dinein != null) Constant.isDineInEnable = dinein['isEnabled'];
+    final adminCommission = docs['AdminCommission'];
+    if (adminCommission != null) {
+      Constant.adminCommission = AdminCommission.fromJson(adminCommission);
+    }
+    final mapKey = docs['googleMapKey'];
+    if (mapKey != null) {
+      Constant.mapAPIKey = mapKey['key'];
+      Constant.placeHolderImage =
+          mapKey['placeHolderImage']?.toString() ?? '';
+    }
+    final story = docs['story'];
+    if (story != null) Constant.storyEnable = story['isEnabled'];
+    final placeholder = docs['placeHolderImage'];
+    if (placeholder != null) {
+      Constant.placeholderImage = placeholder['image']?.toString() ?? '';
+    }
+    if (Constant.placeholderImage.isEmpty &&
+        Constant.placeHolderImage.isNotEmpty) {
+      Constant.placeholderImage = Constant.placeHolderImage;
+    } else if (Constant.placeHolderImage.isEmpty &&
+        Constant.placeholderImage.isNotEmpty) {
+      Constant.placeHolderImage = Constant.placeholderImage;
+    }
+    final version = docs['Version'];
+    if (version != null) {
+      Constant.googlePlayLink = version['googlePlayLink'] ?? '';
+      Constant.appStoreLink = version['appStoreLink'] ?? '';
+      Constant.appVersion = version['app_version'] ?? '';
+      Constant.storeUrl = version['storeUrl'] ?? '';
+    }
+    final nearby = docs['RestaurantNearBy'];
+    if (nearby != null) Constant.distanceType = nearby['distanceType'];
+    final special = docs['specialDiscountOffer'];
+    if (special != null) {
+      Constant.specialDiscountOfferEnable = special['isEnable'];
+    }
+    final email = docs['emailSetting'];
+    if (email != null) Constant.mailSettings = MailSettings.fromJson(email);
+    final contact = docs['ContactUs'];
+    if (contact != null) Constant.adminEmail = contact['Email'];
+    final notif = docs['notification_setting'];
+    if (notif != null) {
+      Constant.senderId = notif['projectId'];
+      Constant.jsonNotificationFileURL = notif['serviceJson'];
+    }
+    final docVer = docs['document_verification_settings'];
+    if (docVer != null) {
+      Constant.isRestaurantVerification = docVer['isRestaurantVerification'];
+    }
+    final privacy = docs['privacyPolicy'];
+    if (privacy != null) Constant.privacyPolicy = privacy['privacy_policy'];
+    final terms = docs['termsAndConditions'];
+    if (terms != null) {
+      Constant.termsAndConditions = terms['termsAndConditions'];
+    }
+    final openai = docs['openai_settings'];
+    if (openai != null) Constant.openAIStatus = openai['status'];
+    final localisation = docs['localisationSettings'];
+    if (localisation != null) {
+      Constant.apiKeyOfDeepl = localisation['apiKeyOfDeepl'] ?? '';
+      Constant.localisationType = localisation['localisationType'] ?? '';
     }
   }
 
@@ -472,7 +448,15 @@ class FireStoreUtils {
     return isExit;
   }
 
+  static List<TaxModel>? _taxSessionCache;
+  static String? _taxSessionKey;
+
   static Future<List<TaxModel>?> getTaxList(double lat, double lng) async {
+    final key = '${lat.toStringAsFixed(3)},${lng.toStringAsFixed(3)}';
+    if (_taxSessionCache != null && _taxSessionKey == key) {
+      return _taxSessionCache;
+    }
+
     List<TaxModel> taxList = [];
     List<Placemark> placeMarks = await placemarkFromCoordinates(lat, lng);
 
@@ -485,6 +469,8 @@ class FireStoreUtils {
       log(error.toString());
     });
 
+    _taxSessionKey = key;
+    _taxSessionCache = taxList;
     return taxList;
   }
 
@@ -575,6 +561,102 @@ class FireStoreUtils {
       rethrow;
     }
     return isUpdate;
+  }
+
+  static Future<bool> deleteDriverCashbackRedeem(OrderModel orderModel) async {
+    bool deleted = false;
+    try {
+      QuerySnapshot snap;
+      if (orderModel.driverCashback?.id != null && orderModel.driverCashback!.id!.isNotEmpty) {
+        snap = await fireStore
+            .collection(CollectionName.driverCashbackRedeem)
+            .where('orderId', isEqualTo: orderModel.id)
+            .where('cashbackId', isEqualTo: orderModel.driverCashback!.id)
+            .get();
+      } else {
+        snap = await fireStore
+            .collection(CollectionName.driverCashbackRedeem)
+            .where('orderId', isEqualTo: orderModel.id)
+            .get();
+      }
+      for (final doc in snap.docs) {
+        await fireStore.collection(CollectionName.driverCashbackRedeem).doc(doc.id).delete();
+        deleted = true;
+      }
+      orderModel.driverCashback = null;
+    } catch (e) {
+      log('deleteDriverCashbackRedeem: $e');
+    }
+    return deleted;
+  }
+
+  /// Attach Tangzo-driver cashback when restaurant assigns own delivery person.
+  static Future<OrderModel> attachDriverCashbackIfEligible(OrderModel order, String driverId) async {
+    try {
+      if (driverId.isEmpty) return order;
+      if (order.driverCashback?.id != null && order.driverID == driverId) return order;
+
+      final settings = await fireStore.collection(CollectionName.settings).doc('driverCashbackOffer').get();
+      final isEnable = settings.data()?['isEnable'] == true;
+      if (!isEnable) return order;
+
+      final deliveryCharge = double.tryParse("${order.deliveryCharge ?? 0}") ?? 0.0;
+      final paymentMethod = order.paymentMethod ?? '';
+      final now = DateTime.now();
+      final offersSnap = await fireStore.collection(CollectionName.driverCashback).get();
+
+      DriverCashbackModel? best;
+      double maxValue = 0.0;
+
+      for (final doc in offersSnap.docs) {
+        final offer = DriverCashbackModel.fromJson(doc.data());
+        if (offer.isEnabled != true) continue;
+        final startDate = offer.startDate;
+        final endDate = offer.endDate;
+        if (startDate == null || endDate == null) continue;
+        final withinDate = startDate.toDate().isBefore(now) && endDate.toDate().isAfter(now);
+        final meetsMin = deliveryCharge >= (offer.minimumPurchaseAmount ?? 0);
+        final paymentMatch = (offer.allPayment ?? false) || (offer.paymentMethods ?? []).contains(paymentMethod);
+        final driverMatch = (offer.allDrivers ?? false) || (offer.driverIds ?? []).contains(driverId);
+        if (!withinDate || !meetsMin || !paymentMatch || !driverMatch) continue;
+
+        final redeemSnap = await fireStore
+            .collection(CollectionName.driverCashbackRedeem)
+            .where('cashbackId', isEqualTo: offer.id)
+            .where('userId', isEqualTo: driverId)
+            .get();
+        if (redeemSnap.docs.length >= (offer.redeemLimit ?? 0)) continue;
+
+        double value = 0.0;
+        if (offer.cashbackType == 'Percent') {
+          value = ((offer.cashbackAmount ?? 0.0) / 100.0) * deliveryCharge;
+        } else if (offer.cashbackType == 'Fixed') {
+          value = offer.cashbackAmount ?? 0.0;
+        }
+        final maxDiscount = offer.maximumDiscount ?? value;
+        if (value > maxDiscount) value = maxDiscount;
+        if (value > maxValue) {
+          maxValue = value;
+          best = offer;
+        }
+      }
+
+      if (best == null || best.id == null || maxValue <= 0) return order;
+      best.cashbackValue = maxValue;
+      order.driverCashback = best;
+
+      final redeem = DriverCashbackRedeemModel(
+        id: Constant.getUuid(),
+        cashbackId: best.id,
+        userId: driverId,
+        orderId: order.id,
+        createdAt: Timestamp.now(),
+      );
+      await fireStore.collection(CollectionName.driverCashbackRedeem).doc(redeem.id).set(redeem.toJson());
+    } catch (e) {
+      log('attachDriverCashbackIfEligible: $e');
+    }
+    return order;
   }
 
   static Future<bool> updateOrder(OrderModel orderModel) async {
@@ -1179,16 +1261,21 @@ class FireStoreUtils {
     });
   }
 
+  static final Map<String, VendorModel> _vendorSessionCache = {};
+
   static Future<VendorModel?> getVendorById(String vendorId) async {
+    if (vendorId.isEmpty) return null;
+    final hit = _vendorSessionCache[vendorId];
+    if (hit != null) return hit;
+
     VendorModel? vendorModel;
     try {
-      if (vendorId.isNotEmpty) {
-        await fireStore.collection(CollectionName.vendors).doc(vendorId).get().then((value) {
-          if (value.exists) {
-            vendorModel = VendorModel.fromJson(value.data()!);
-          }
-        });
-      }
+      await fireStore.collection(CollectionName.vendors).doc(vendorId).get().then((value) {
+        if (value.exists) {
+          vendorModel = VendorModel.fromJson(value.data()!);
+          _vendorSessionCache[vendorId] = vendorModel!;
+        }
+      });
     } catch (e, s) {
       log('FireStoreUtils.firebaseCreateNewUser $e $s');
       return null;

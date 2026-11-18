@@ -11,6 +11,7 @@ import 'package:restaurant/firebase_options.dart';
 import 'package:restaurant/models/language_model.dart';
 import 'package:restaurant/service/audio_player_service.dart';
 import 'package:restaurant/service/localization_service.dart';
+import 'package:restaurant/services/settings_api.dart';
 import 'package:restaurant/themes/safe_bottom_app_builder.dart';
 import 'package:restaurant/themes/styles.dart';
 import 'package:restaurant/utils/dark_theme_provider.dart';
@@ -30,6 +31,7 @@ void main() async {
   }
 
   await Preferences.initPref();
+  SettingsApi.prefetch();
   runApp(const MyApp());
 }
 

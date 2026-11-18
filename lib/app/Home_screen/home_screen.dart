@@ -915,6 +915,7 @@ class HomeScreen extends StatelessWidget {
                               if (orderModel.cashback?.id != null && orderModel.cashback?.cashbackValue != null) {
                                 await FireStoreUtils.deleteCashbackRedeem(orderModel);
                               }
+                              await FireStoreUtils.deleteDriverCashbackRedeem(orderModel);
                               await FireStoreUtils.updateOrder(orderModel);
                               SendNotification.sendFcmMessage(Constant.restaurantRejected, orderModel.author!.fcmToken.toString(), {});
                               if (orderModel.paymentMethod!.toLowerCase() != 'cod') {
@@ -1651,6 +1652,7 @@ class HomeScreen extends StatelessWidget {
                                 if (orderModel.cashback?.id != null && orderModel.cashback?.cashbackValue != null) {
                                   await FireStoreUtils.deleteCashbackRedeem(orderModel);
                                 }
+                                await FireStoreUtils.deleteDriverCashbackRedeem(orderModel);
                                 if (orderModel.driver?.id != null) {
                                   UserModel? driver = await FireStoreUtils.getUserById(orderModel.driver!.id!);
                                   driver?.inProgressOrderID?.remove(orderModel.id);
@@ -1736,7 +1738,6 @@ class HomeScreen extends StatelessWidget {
                                 : RoundedButtonFill(
                                     title: Constant.statusDisplayLabel(
                                       status: orderModel.status.toString(),
-                                      deliveryPartner: orderModel.deliveryPartner,
                                     ),
                                     color: AppThemeData.secondary300,
                                     textColor: AppThemeData.grey50,
@@ -2212,7 +2213,6 @@ class HomeScreen extends StatelessWidget {
                   child: RoundedButtonFill(
                     title: Constant.statusDisplayLabel(
                       status: orderModel.status.toString(),
-                      deliveryPartner: orderModel.deliveryPartner,
                     ),
                     color: orderModel.status == Constant.orderRejected
                         ? AppThemeData.danger300
@@ -2411,11 +2411,16 @@ class HomeScreen extends StatelessWidget {
                               orderModel.status = Constant.orderInTransit;
                               controller.selectDriverUser.value.inProgressOrderID!.add(orderModel.id);
                               await AudioPlayerService.playSound(false);
-                              await FireStoreUtils.updateOrder(orderModel);
+                              final OrderModel orderWithCashback =
+                                  await FireStoreUtils.attachDriverCashbackIfEligible(
+                                orderModel,
+                                controller.selectDriverUser.value.id ?? '',
+                              );
+                              await FireStoreUtils.updateOrder(orderWithCashback);
                               await FireStoreUtils.updateDriverUser(controller.selectDriverUser.value);
-                              await FireStoreUtils.restaurantVendorWalletSet(orderModel);
-                              SendNotification.sendFcmMessage(Constant.restaurantAccepted, orderModel.author!.fcmToken.toString(), {});
-                              SendNotification.sendFcmMessage(Constant.newDeliveryOrder, orderModel.driver?.fcmToken ?? '', {});
+                              await FireStoreUtils.restaurantVendorWalletSet(orderWithCashback);
+                              SendNotification.sendFcmMessage(Constant.restaurantAccepted, orderWithCashback.author!.fcmToken.toString(), {});
+                              SendNotification.sendFcmMessage(Constant.newDeliveryOrder, orderWithCashback.driver?.fcmToken ?? '', {});
                               await AudioPlayerService.playSound(false);
                               ShowToastDialog.closeLoader();
                             } else {

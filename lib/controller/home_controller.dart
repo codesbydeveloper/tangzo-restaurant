@@ -114,8 +114,7 @@ class HomeController extends GetxController {
                 p0.status == Constant.driverRejected ||
                 p0.status == Constant.orderShipped ||
                 p0.status == Constant.orderInTransit ||
-                p0.status == Constant.noRiderAvailable ||
-                Constant.isShadowfaxPartner(p0.deliveryPartner))
+                p0.status == Constant.noRiderAvailable)
             .toList();
         completedOrderList.value =
             allOrderList.where((p0) => p0.status == Constant.orderCompleted).toList();
