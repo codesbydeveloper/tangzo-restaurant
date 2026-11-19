@@ -13,6 +13,7 @@ import java.io.OutputStream
 
 class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL = "image_saver"
+    private val RINGTONE_CHANNEL = "tangzo/order_ringtone"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -28,6 +29,23 @@ class MainActivity : FlutterFragmentActivity() {
                 }
             } else {
                 result.notImplemented()
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, RINGTONE_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "start" -> {
+                    val url = call.argument<String>("url")
+                    val title = call.argument<String>("title")
+                    val body = call.argument<String>("body")
+                    OrderRingtoneService.start(this, url, title, body)
+                    result.success(true)
+                }
+                "stop" -> {
+                    OrderRingtoneService.stop(this)
+                    result.success(true)
+                }
+                else -> result.notImplemented()
             }
         }
     }

@@ -1,18 +1,96 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:restaurant/app/help_support_screen/help_support_screen.dart';
+import 'package:restaurant/firebase_options.dart';
+import 'package:restaurant/service/audio_player_service.dart';
 import 'package:restaurant/utils/fire_store_utils.dart';
 import 'package:restaurant/utils/preferences.dart';
 
+const String kOrderAlertChannelId = 'tangzo_order_alerts';
+
+bool _isOrderRingtoneMessage(RemoteMessage message) {
+  final type = (message.data['type']?.toString() ?? '').toLowerCase();
+  if (message.data['play_ringtone']?.toString() == 'true') return true;
+  if (type.contains('order_placed') ||
+      type.contains('new_order') ||
+      type.contains('schedule_order') ||
+      type.contains('dinein_placed') ||
+      type.contains('new_delivery_order')) {
+    return true;
+  }
+  return false;
+}
+
+@pragma('vm:entry-point')
 Future<void> firebaseMessageBackgroundHandle(RemoteMessage message) async {
   log("BackGround Message :: ${message.messageId}");
+  // FCM already shows the system notification when a notification payload is present.
+  if (message.notification != null) return;
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    }
+    final plugin = FlutterLocalNotificationsPlugin();
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    await plugin.initialize(
+      settings: const InitializationSettings(
+        android: androidInit,
+        iOS: DarwinInitializationSettings(),
+      ),
+    );
+    await _ensureOrderAlertChannel(plugin);
+    final title = message.notification?.title ?? message.data['title']?.toString() ?? 'Tangzo';
+    final body = message.notification?.body ?? message.data['body']?.toString() ?? 'New order update';
+    await plugin.show(
+      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title: title,
+      body: body,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          kOrderAlertChannelId,
+          'Tangzo Order Alerts',
+          channelDescription: 'High-priority order alerts with sound',
+          importance: Importance.max,
+          priority: Priority.max,
+          playSound: true,
+          enableVibration: true,
+          category: AndroidNotificationCategory.alarm,
+          visibility: NotificationVisibility.public,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      payload: jsonEncode(message.data),
+    );
+  } catch (e) {
+    log('Background notification error: $e');
+  }
+}
+
+Future<void> _ensureOrderAlertChannel(FlutterLocalNotificationsPlugin plugin) async {
+  const channel = AndroidNotificationChannel(
+    kOrderAlertChannelId,
+    'Tangzo Order Alerts',
+    description: 'High-priority order alerts with sound',
+    importance: Importance.max,
+    playSound: true,
+    enableVibration: true,
+  );
+  await plugin
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(channel);
 }
 
 class NotificationService {
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   Future<void> initInfo() async {
     await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
@@ -25,24 +103,31 @@ class NotificationService {
       announcement: false,
       badge: true,
       carPlay: false,
-      criticalAlert: false,
+      criticalAlert: true,
       provisional: false,
       sound: true,
     );
 
-    if (request.authorizationStatus == AuthorizationStatus.authorized || request.authorizationStatus == AuthorizationStatus.provisional) {
-      const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    if (request.authorizationStatus == AuthorizationStatus.authorized ||
+        request.authorizationStatus == AuthorizationStatus.provisional) {
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
       var iosInitializationSettings = const DarwinInitializationSettings();
-      final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid, iOS: iosInitializationSettings);
+      final InitializationSettings initializationSettings = InitializationSettings(
+        android: initializationSettingsAndroid,
+        iOS: iosInitializationSettings,
+      );
       await flutterLocalNotificationsPlugin.initialize(
-          settings: initializationSettings,
-          onDidReceiveNotificationResponse: (response) {
-            if (response.payload != null) {
-              final data = jsonDecode(response.payload!);
-              final String type = data['type'] ?? '';
-              handleMessageClick(type: type, isBgApp: false);
-            }
-          });
+        settings: initializationSettings,
+        onDidReceiveNotificationResponse: (response) {
+          if (response.payload != null) {
+            final data = jsonDecode(response.payload!);
+            final String type = data['type'] ?? '';
+            handleMessageClick(type: type, isBgApp: false);
+          }
+        },
+      );
+      await _ensureOrderAlertChannel(flutterLocalNotificationsPlugin);
       setupInteractedMessage();
     }
   }
@@ -59,13 +144,11 @@ class NotificationService {
   }
 
   Future<void> setupInteractedMessage() async {
-    // RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-    // if (initialMessage != null) {
-    //   FirebaseMessaging.onBackgroundMessage((message) => firebaseMessageBackgroundHandle(message));
-    // }
-
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       log("::::::::::::onMessage:::::::::::::::::");
+      if (_isOrderRingtoneMessage(message)) {
+        await AudioPlayerService.playSound(true);
+      }
       if (message.notification != null) {
         log(message.notification.toString());
         display(message);
@@ -100,18 +183,30 @@ class NotificationService {
     log('Got a message whilst in the foreground!');
     log('Message data: ${message.notification!.body.toString()}');
     try {
-      AndroidNotificationChannel channel = const AndroidNotificationChannel(
-        '0',
-        'foodie-customer',
-        description: 'Show QuickLAI Notification',
+      await _ensureOrderAlertChannel(flutterLocalNotificationsPlugin);
+      const AndroidNotificationDetails notificationDetails = AndroidNotificationDetails(
+        kOrderAlertChannelId,
+        'Tangzo Order Alerts',
+        channelDescription: 'High-priority order alerts with sound',
         importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        enableVibration: true,
+        category: AndroidNotificationCategory.alarm,
+        visibility: NotificationVisibility.public,
+        ticker: 'ticker',
       );
-      AndroidNotificationDetails notificationDetails =
-          AndroidNotificationDetails(channel.id, channel.name, channelDescription: 'your channel Description', importance: Importance.high, priority: Priority.high, ticker: 'ticker');
-      const DarwinNotificationDetails darwinNotificationDetails = DarwinNotificationDetails(presentAlert: true, presentBadge: true, presentSound: true);
-      NotificationDetails notificationDetailsBoth = NotificationDetails(android: notificationDetails, iOS: darwinNotificationDetails);
-      await FlutterLocalNotificationsPlugin().show(
-        id: 0,
+      const DarwinNotificationDetails darwinNotificationDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+      const NotificationDetails notificationDetailsBoth = NotificationDetails(
+        android: notificationDetails,
+        iOS: darwinNotificationDetails,
+      );
+      await flutterLocalNotificationsPlugin.show(
+        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         title: message.notification!.title,
         body: message.notification!.body,
         notificationDetails: notificationDetailsBoth,

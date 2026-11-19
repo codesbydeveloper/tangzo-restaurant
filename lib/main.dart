@@ -17,13 +17,16 @@ import 'package:restaurant/themes/styles.dart';
 import 'package:restaurant/utils/dark_theme_provider.dart';
 import 'package:restaurant/utils/dynamic_traslator.dart';
 import 'package:restaurant/utils/fire_store_utils.dart';
+import 'package:restaurant/utils/notification_service.dart';
 import 'package:restaurant/utils/preferences.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   FirebaseApp firebaseApp = await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  FirebaseMessaging.onBackgroundMessage(firebaseMessageBackgroundHandle);
   if (currentEnv == FirebaseEnv.defaultDb) {
     FireStoreUtils.instance.init(firebaseApp);
   } else {
