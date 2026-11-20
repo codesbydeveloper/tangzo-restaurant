@@ -172,7 +172,12 @@ class FireStoreUtils {
 
   static Future<bool> updateUser(UserModel userModel) async {
     bool isUpdate = false;
-    await fireStore.collection(CollectionName.users).doc(userModel.id).set(userModel.toJson()).whenComplete(() async {
+    // Merge so admin-only fields (e.g. top-level gst/pan) are not wiped by a full set().
+    await fireStore
+        .collection(CollectionName.users)
+        .doc(userModel.id)
+        .set(userModel.toJson(), SetOptions(merge: true))
+        .whenComplete(() async {
       Constant.userModel = userModel;
       if (userModel.employeePermissionId != null) {
         Constant.employeeRoleModel = await FireStoreUtils.getEmployeeRoleById(userModel.employeePermissionId!);

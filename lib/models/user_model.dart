@@ -98,6 +98,20 @@ class UserModel {
     role = json['role'] ?? 'user';
     location = json['location'] != null ? UserLocation.fromJson(json['location']) : null;
     userBankDetails = json['userBankDetails'] != null ? UserBankDetails.fromJson(json['userBankDetails']) : null;
+    // Migrate legacy top-level GST/PAN (admin) into userBankDetails used by the restaurant app.
+    final topGst = (json['gstNumber'] ?? '').toString().trim();
+    final topPan = (json['panNumber'] ?? '').toString().trim();
+    if (topGst.isNotEmpty || topPan.isNotEmpty) {
+      userBankDetails ??= UserBankDetails();
+      if (userBankDetails!.gstNumber.trim().isEmpty && topGst.isNotEmpty) {
+        userBankDetails!.gstNumber = topGst;
+        userBankDetails!.isGstAvailable = true;
+      }
+      if (userBankDetails!.panNumber.trim().isEmpty && topPan.isNotEmpty) {
+        userBankDetails!.panNumber = topPan;
+        if (topGst.isNotEmpty) userBankDetails!.isGstAvailable = true;
+      }
+    }
     if (json['shippingAddress'] != null) {
       shippingAddress = <ShippingAddress>[];
       json['shippingAddress'].forEach((v) {
@@ -144,6 +158,9 @@ class UserModel {
     }
     if (userBankDetails != null) {
       data['userBankDetails'] = userBankDetails!.toJson();
+      // Mirror for admin vendor edit screens that still read top-level fields.
+      data['gstNumber'] = userBankDetails!.gstNumber;
+      data['panNumber'] = userBankDetails!.panNumber;
     }
     if (shippingAddress != null) {
       data['shippingAddress'] = shippingAddress!.map((v) => v.toJson()).toList();
