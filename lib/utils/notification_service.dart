@@ -65,6 +65,8 @@ Future<void> firebaseMessageBackgroundHandle(RemoteMessage message) async {
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
+          sound: 'order_bell.caf',
+          interruptionLevel: InterruptionLevel.timeSensitive,
         ),
       ),
       payload: jsonEncode(message.data),
@@ -200,6 +202,8 @@ class NotificationService {
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
+        sound: 'order_bell.caf',
+        interruptionLevel: InterruptionLevel.timeSensitive,
       );
       const NotificationDetails notificationDetailsBoth = NotificationDetails(
         android: notificationDetails,

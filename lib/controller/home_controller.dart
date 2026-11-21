@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:developer';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Constant;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:restaurant/constant/collection_name.dart';
@@ -17,11 +19,21 @@ class HomeController extends GetxController {
 
   RxInt selectedTabIndex = 0.obs;
 
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _ordersSub;
+  Set<String> _knownNewOrderIds = <String>{};
+
   @override
   void onInit() {
     // TODO: implement onInit
     getUserProfile();
     super.onInit();
+  }
+
+  @override
+  void onClose() {
+    _ordersSub?.cancel();
+    _ordersSub = null;
+    super.onClose();
   }
 
   RxList<OrderModel> allOrderList = <OrderModel>[].obs;
@@ -90,23 +102,33 @@ class HomeController extends GetxController {
   static const int _liveOrderLimit = 100;
 
   Future<void> getOrder() async {
-    FireStoreUtils.fireStore
+    await _ordersSub?.cancel();
+    _ordersSub = null;
+
+    final vendorId = Constant.userModel?.vendorID ?? userModel.value.vendorID;
+    if (vendorId == null || vendorId.isEmpty) {
+      return;
+    }
+
+    _ordersSub = FireStoreUtils.fireStore
         .collection(CollectionName.restaurantOrders)
-        .where('vendorID', isEqualTo: Constant.userModel!.vendorID)
+        .where('vendorID', isEqualTo: vendorId)
         .orderBy('createdAt', descending: true)
         .limit(_liveOrderLimit)
         .snapshots()
         .listen(
       (event) async {
-        allOrderList.clear();
+        final List<OrderModel> nextAll = [];
         for (var element in event.docs) {
-          allOrderList.add(OrderModel.fromJson(element.data()));
+          nextAll.add(OrderModel.fromJson(element.data()));
         }
 
-        // Recompute status buckets once per snapshot (not inside the doc loop).
-        newOrderList.value =
-            allOrderList.where((p0) => p0.status == Constant.orderPlaced).toList();
-        acceptedOrderList.value = allOrderList
+        // Assign in one shot — avoid clear()+add mid-frame blink during Shiprocket claim writes.
+        allOrderList.assignAll(nextAll);
+
+        final nextNew =
+            nextAll.where((p0) => p0.status == Constant.orderPlaced).toList();
+        final nextAccepted = nextAll
             .where((p0) =>
                 p0.status == Constant.orderAccepted ||
                 p0.status == Constant.driverAccepted ||
@@ -116,22 +138,32 @@ class HomeController extends GetxController {
                 p0.status == Constant.orderInTransit ||
                 p0.status == Constant.noRiderAvailable)
             .toList();
-        completedOrderList.value =
-            allOrderList.where((p0) => p0.status == Constant.orderCompleted).toList();
-        rejectedOrderList.value =
-            allOrderList.where((p0) => p0.status == Constant.orderRejected).toList();
-        cancelledOrderList.value =
-            allOrderList.where((p0) => p0.status == Constant.orderCancelled).toList();
-        update();
+        final nextCompleted =
+            nextAll.where((p0) => p0.status == Constant.orderCompleted).toList();
+        final nextRejected =
+            nextAll.where((p0) => p0.status == Constant.orderRejected).toList();
+        final nextCancelled =
+            nextAll.where((p0) => p0.status == Constant.orderCancelled).toList();
 
-        if (newOrderList.isNotEmpty == true) {
-          if (newOrderList.every((element) => element.scheduleTime == null)) {
+        newOrderList.assignAll(nextNew);
+        acceptedOrderList.assignAll(nextAccepted);
+        completedOrderList.assignAll(nextCompleted);
+        rejectedOrderList.assignAll(nextRejected);
+        cancelledOrderList.assignAll(nextCancelled);
+
+        final currentNewIds = nextNew
+            .map((e) => e.id?.toString() ?? '')
+            .where((id) => id.isNotEmpty)
+            .toSet();
+        final hasBrandNew =
+            currentNewIds.any((id) => !_knownNewOrderIds.contains(id));
+        _knownNewOrderIds = currentNewIds;
+
+        if (nextNew.isNotEmpty) {
+          if (hasBrandNew && nextNew.every((element) => element.scheduleTime == null)) {
             await AudioPlayerService.playSound(true);
-          } else {
-            await AudioPlayerService.playSound(false);
           }
         } else {
-          log("PlaySound :::::: 22");
           await AudioPlayerService.playSound(false);
         }
       },
