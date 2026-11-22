@@ -28,6 +28,7 @@ import 'package:restaurant/app/working_hours_screen/working_hours_screen.dart';
 import 'package:restaurant/constant/constant.dart';
 import 'package:restaurant/constant/show_toast_dialog.dart';
 import 'package:restaurant/controller/dash_board_controller.dart';
+import 'package:restaurant/controller/home_controller.dart';
 import 'package:restaurant/controller/profile_controller.dart';
 import 'package:restaurant/models/employee_role_model.dart';
 import 'package:restaurant/models/user_model.dart';
@@ -1182,6 +1183,12 @@ class ProfileScreen extends StatelessWidget {
                                               await FireStoreUtils.updateUser(Constant.userModel!);
                                               Constant.userModel = null;
                                               await FirebaseAuth.instance.signOut();
+                                              if (Get.isRegistered<HomeController>()) {
+                                                Get.delete<HomeController>(force: true);
+                                              }
+                                              if (Get.isRegistered<DashBoardController>()) {
+                                                Get.delete<DashBoardController>(force: true);
+                                              }
                                               Get.offAll(const LoginScreen());
                                             },
                                             negativeClick: () {

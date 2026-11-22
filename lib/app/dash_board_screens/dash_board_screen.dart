@@ -34,7 +34,15 @@ class DashBoardScreen extends StatelessWidget {
             }
           },
           child: Scaffold(
-            body: controller.navigationItems[controller.selectedIndex.value].page,
+            body: controller.navigationItems.isEmpty
+                ? const SizedBox.shrink()
+                : IndexedStack(
+                    index: controller.selectedIndex.value.clamp(
+                      0,
+                      controller.navigationItems.length - 1,
+                    ),
+                    children: controller.navigationItems.map((e) => e.page).toList(),
+                  ),
             bottomNavigationBar: ValueListenableBuilder(
                 valueListenable: TranslationNotifier.refresh,
                 builder: (_, __, ___) {

@@ -46,12 +46,13 @@ class HomeScreen extends StatelessWidget {
         valueListenable: TranslationNotifier.refresh,
         builder: (_, __, ___) {
           return GetX(
-              init: HomeController(),
+              init: Get.put(HomeController(), permanent: true),
               builder: (controller) {
                 return controller.isLoading.value
                     ? Constant.loader()
                     : DefaultTabController(
                         length: 5,
+                        initialIndex: controller.selectedTabIndex.value.clamp(0, 4),
                         child: Scaffold(
                           appBar: AppBar(
                             backgroundColor: AppThemeData.secondary300,
@@ -111,21 +112,11 @@ class HomeScreen extends StatelessWidget {
                                     labelPadding: const EdgeInsets.symmetric(horizontal: 20),
                                     dividerColor: Colors.transparent,
                                     tabs: [
-                                      Tab(
-                                        text: "New".tr,
-                                      ),
-                                      Tab(
-                                        text: "Accepted".tr,
-                                      ),
-                                      Tab(
-                                        text: "Completed".tr,
-                                      ),
-                                      Tab(
-                                        text: "Rejected".tr,
-                                      ),
-                                      Tab(
-                                        text: "Cancelled".tr,
-                                      ),
+                                      Tab(text: "New".tr),
+                                      Tab(text: "Accepted".tr),
+                                      Tab(text: "Completed".tr),
+                                      Tab(text: "Rejected".tr),
+                                      Tab(text: "Cancelled".tr),
                                     ],
                                   )
                                 : null,
@@ -238,66 +229,76 @@ class HomeScreen extends StatelessWidget {
                                   : Padding(
                                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                       child: Constant.getEmployeeRolePermission(module: "Manage Order") == true
-                                          ? TabBarView(
-                                              children: [
-                                                controller.newOrderList.isEmpty
-                                                    ? Constant.showEmptyView(message: "New Orders Not found")
-                                                    : ListView.builder(
-                                                        shrinkWrap: true,
-                                                        itemCount: controller.newOrderList.length,
-                                                        itemBuilder: (context, index) {
-                                                          OrderModel orderModel = controller.newOrderList[index];
-                                                          return newOrderWidget(themeChange, context, orderModel, controller);
-                                                        },
-                                                      ),
-                                                controller.acceptedOrderList.isEmpty
-                                                    ? Constant.showEmptyView(message: "Accepted Orders Not found")
-                                                    : ListView.builder(
-                                                        shrinkWrap: true,
-                                                        itemCount: controller.acceptedOrderList.length,
-                                                        itemBuilder: (context, index) {
-                                                          OrderModel orderModel = controller.acceptedOrderList[index];
-                                                          return acceptedWidget(themeChange, context, orderModel, controller);
-                                                        },
-                                                      ),
-                                                controller.completedOrderList.isEmpty
-                                                    ? Constant.showEmptyView(message: "Completed Orders Not found")
-                                                    : ListView.builder(
-                                                        shrinkWrap: true,
-                                                        itemCount: controller.completedOrderList.length,
-                                                        itemBuilder: (context, index) {
-                                                          OrderModel orderModel = controller.completedOrderList[index];
-                                                          return completedAndRejectedWidget(themeChange, context, orderModel, controller);
-                                                        },
-                                                      ),
-                                                controller.rejectedOrderList.isEmpty
-                                                    ? Constant.showEmptyView(message: "Rejected Orders Not found")
-                                                    : ListView.builder(
-                                                        shrinkWrap: true,
-                                                        itemCount: controller.rejectedOrderList.length,
-                                                        itemBuilder: (context, index) {
-                                                          OrderModel orderModel = controller.rejectedOrderList[index];
-                                                          return completedAndRejectedWidget(themeChange, context, orderModel, controller);
-                                                        },
-                                                      ),
-                                                controller.cancelledOrderList.isEmpty
-                                                    ? Constant.showEmptyView(message: "Cancelled Orders Not found")
-                                                    : ListView.builder(
-                                                        shrinkWrap: true,
-                                                        itemCount: controller.cancelledOrderList.length,
-                                                        itemBuilder: (context, index) {
-                                                          OrderModel orderModel = controller.cancelledOrderList[index];
-                                                          return completedAndRejectedWidget(themeChange, context, orderModel, controller);
-                                                        },
-                                                      ),
-                                              ],
-                                            )
+                                          ? Obx(() {
+                                              // IndexedStack: TabBarView was caching children so after
+                                              // reject the next order rang but did not paint until restart.
+                                              final tab = controller.selectedTabIndex.value;
+                                              final pages = <Widget>[
+                                                _ordersListOrEmpty(
+                                                  list: controller.newOrderList,
+                                                  emptyMessage: "New Orders Not found",
+                                                  listKey: 'new',
+                                                  itemBuilder: (ctx, order) =>
+                                                      newOrderWidget(themeChange, ctx, order, controller),
+                                                ),
+                                                _ordersListOrEmpty(
+                                                  list: controller.acceptedOrderList,
+                                                  emptyMessage: "Accepted Orders Not found",
+                                                  listKey: 'accepted',
+                                                  itemBuilder: (ctx, order) =>
+                                                      acceptedWidget(themeChange, ctx, order, controller),
+                                                ),
+                                                _ordersListOrEmpty(
+                                                  list: controller.completedOrderList,
+                                                  emptyMessage: "Completed Orders Not found",
+                                                  listKey: 'completed',
+                                                  itemBuilder: (ctx, order) =>
+                                                      completedAndRejectedWidget(themeChange, ctx, order, controller),
+                                                ),
+                                                _ordersListOrEmpty(
+                                                  list: controller.rejectedOrderList,
+                                                  emptyMessage: "Rejected Orders Not found",
+                                                  listKey: 'rejected',
+                                                  itemBuilder: (ctx, order) =>
+                                                      completedAndRejectedWidget(themeChange, ctx, order, controller),
+                                                ),
+                                                _ordersListOrEmpty(
+                                                  list: controller.cancelledOrderList,
+                                                  emptyMessage: "Cancelled Orders Not found",
+                                                  listKey: 'cancelled',
+                                                  itemBuilder: (ctx, order) =>
+                                                      completedAndRejectedWidget(themeChange, ctx, order, controller),
+                                                ),
+                                              ];
+                                              return IndexedStack(
+                                                index: tab.clamp(0, pages.length - 1),
+                                                children: pages,
+                                              );
+                                            })
                                           : Constant.showEmptyView(message: "You don’t have permission to view orders."),
                                     ),
                         ),
                       );
               });
         });
+  }
+
+  Widget _ordersListOrEmpty({
+    required List<OrderModel> list,
+    required String emptyMessage,
+    required String listKey,
+    required Widget Function(BuildContext context, OrderModel order) itemBuilder,
+  }) {
+    if (list.isEmpty) {
+      return Constant.showEmptyView(message: emptyMessage);
+    }
+    final ids = list.map((e) => e.id ?? '').join('_');
+    return ListView.builder(
+      key: ValueKey('${listKey}_${list.length}_$ids'),
+      shrinkWrap: true,
+      itemCount: list.length,
+      itemBuilder: (context, index) => itemBuilder(context, list[index]),
+    );
   }
 
   InkWell newOrderWidget(themeChange, BuildContext context, OrderModel orderModel, HomeController controller) {
@@ -940,9 +941,10 @@ class HomeScreen extends StatelessWidget {
                                 }
                               }
                               ShowToastDialog.closeLoader();
-                              controller.getOrder();
+                              // Do not Get.back() / getOrder() here — stream is live;
+                              // cancel+resubscribe + extra pop broke next-order UI.
+                              await controller.refreshOrdersNow(playSoundIfNew: false);
                               await AudioPlayerService.playSound(false);
-                              Get.back();
                             },
                           ),
                         ),
@@ -1690,9 +1692,8 @@ class HomeScreen extends StatelessWidget {
                                 }
 
                                 ShowToastDialog.closeLoader();
-                                controller.getOrder();
+                                await controller.refreshOrdersNow(playSoundIfNew: false);
                                 await AudioPlayerService.playSound(false);
-                                Get.back();
                               },
                             ),
                           ),

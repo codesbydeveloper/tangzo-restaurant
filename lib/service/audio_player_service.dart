@@ -28,6 +28,7 @@ class AudioPlayerService with WidgetsBindingObserver {
           'url': url,
           'title': 'New order',
           'body': 'Incoming Tangzo order',
+          'minSeconds': 20,
         });
       } else {
         _isPlaying = false;

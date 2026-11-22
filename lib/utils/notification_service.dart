@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:restaurant/app/help_support_screen/help_support_screen.dart';
+import 'package:restaurant/controller/home_controller.dart';
 import 'package:restaurant/firebase_options.dart';
 import 'package:restaurant/service/audio_player_service.dart';
 import 'package:restaurant/utils/fire_store_utils.dart';
@@ -35,7 +36,7 @@ Future<void> firebaseMessageBackgroundHandle(RemoteMessage message) async {
       await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     }
     final plugin = FlutterLocalNotificationsPlugin();
-    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidInit = AndroidInitializationSettings('@mipmap/launcher_icon');
     await plugin.initialize(
       settings: const InitializationSettings(
         android: androidInit,
@@ -113,7 +114,7 @@ class NotificationService {
     if (request.authorizationStatus == AuthorizationStatus.authorized ||
         request.authorizationStatus == AuthorizationStatus.provisional) {
       const AndroidInitializationSettings initializationSettingsAndroid =
-          AndroidInitializationSettings('@mipmap/ic_launcher');
+          AndroidInitializationSettings('@mipmap/launcher_icon');
       var iosInitializationSettings = const DarwinInitializationSettings();
       final InitializationSettings initializationSettings = InitializationSettings(
         android: initializationSettingsAndroid,
@@ -150,6 +151,10 @@ class NotificationService {
       log("::::::::::::onMessage:::::::::::::::::");
       if (_isOrderRingtoneMessage(message)) {
         await AudioPlayerService.playSound(true);
+        // Ensure New-orders board paints even if the live stream UI stalled.
+        if (Get.isRegistered<HomeController>()) {
+          await Get.find<HomeController>().refreshOrdersNow(playSoundIfNew: false);
+        }
       }
       if (message.notification != null) {
         log(message.notification.toString());

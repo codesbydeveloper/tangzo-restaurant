@@ -37,7 +37,9 @@ import AudioToolbox
         case "start":
           let args = call.arguments as? [String: Any]
           let url = args?["url"] as? String
-          self?.ringtoneManager.start(urlString: url)
+          // Minimum 20s ring (admin remote URL is often ~5s).
+          let minSeconds = (args?["minSeconds"] as? Int) ?? 20
+          self?.ringtoneManager.start(urlString: url, minSeconds: minSeconds)
           result(nil)
         case "stop":
           self?.ringtoneManager.stop()
@@ -48,6 +50,8 @@ import AudioToolbox
       }
     }
 
+    // Do not override UNUserNotificationCenter / didReceiveRemoteNotification —
+    // FlutterFire owns those. Intercepting them breaks background notifications.
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -62,35 +66,34 @@ import AudioToolbox
   }
 }
 
-/// Loops order alert audio in foreground/background (requires UIBackgroundModes audio).
+/// Loops order alert audio (requires UIBackgroundModes → audio).
+/// Started only via Flutter method channel so FCM delivery stays intact.
 final class OrderRingtoneManager: NSObject, AVAudioPlayerDelegate {
   static let shared = OrderRingtoneManager()
 
   private var player: AVAudioPlayer?
-  private var remotePlayer: AVPlayer?
-  private var remoteEndObserver: NSObjectProtocol?
+  private var stopTimer: Timer?
   private var isPlaying = false
 
-  func start(urlString: String?) {
+  func start(urlString: String?, minSeconds: Int = 20) {
     stopPlayersOnly()
     activateSession()
 
-    // Prefer remote URL (admin-configured ringtone), fall back to bundled order_bell.caf.
+    // Prefer bundled 20s bell so ring lasts long enough (remote URLs are often short).
+    if let bundled = Bundle.main.url(forResource: "order_bell", withExtension: "caf") {
+      playLocal(url: bundled, minSeconds: max(20, minSeconds))
+      isPlaying = true
+      return
+    }
+
     if let urlString = urlString?.trimmingCharacters(in: .whitespacesAndNewlines),
        !urlString.isEmpty,
        let remoteURL = URL(string: urlString) {
-      playRemote(url: remoteURL)
+      downloadAndPlay(url: remoteURL, minSeconds: max(20, minSeconds))
       isPlaying = true
       return
     }
 
-    if let bundled = Bundle.main.url(forResource: "order_bell", withExtension: "caf") {
-      playLocal(url: bundled)
-      isPlaying = true
-      return
-    }
-
-    // Last resort: system alert sound so something still plays.
     AudioServicesPlaySystemSound(1005)
   }
 
@@ -109,7 +112,7 @@ final class OrderRingtoneManager: NSObject, AVAudioPlayerDelegate {
     }
   }
 
-  private func playLocal(url: URL) {
+  private func playLocal(url: URL, minSeconds: Int) {
     do {
       let audioPlayer = try AVAudioPlayer(contentsOf: url)
       audioPlayer.numberOfLoops = -1
@@ -118,35 +121,56 @@ final class OrderRingtoneManager: NSObject, AVAudioPlayerDelegate {
       audioPlayer.prepareToPlay()
       audioPlayer.play()
       player = audioPlayer
+      scheduleAutoStop(after: minSeconds)
     } catch {
       NSLog("OrderRingtoneManager local play error: \(error)")
     }
   }
 
-  private func playRemote(url: URL) {
-    let item = AVPlayerItem(url: url)
-    let avPlayer = AVPlayer(playerItem: item)
-    avPlayer.actionAtItemEnd = .none
-    remoteEndObserver = NotificationCenter.default.addObserver(
-      forName: .AVPlayerItemDidPlayToEndTime,
-      object: item,
-      queue: .main
-    ) { [weak avPlayer] _ in
-      avPlayer?.seek(to: .zero)
-      avPlayer?.play()
+  private func downloadAndPlay(url: URL, minSeconds: Int) {
+    URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+      guard let self = self else { return }
+      if error != nil {
+        DispatchQueue.main.async {
+          if let bundled = Bundle.main.url(forResource: "order_bell", withExtension: "caf") {
+            self.playLocal(url: bundled, minSeconds: minSeconds)
+          }
+        }
+        return
+      }
+      guard let data = data, !data.isEmpty else { return }
+      DispatchQueue.main.async {
+        do {
+          let audioPlayer = try AVAudioPlayer(data: data)
+          audioPlayer.numberOfLoops = -1
+          audioPlayer.volume = 1.0
+          audioPlayer.delegate = self
+          audioPlayer.prepareToPlay()
+          audioPlayer.play()
+          self.player = audioPlayer
+          self.scheduleAutoStop(after: minSeconds)
+        } catch {
+          if let bundled = Bundle.main.url(forResource: "order_bell", withExtension: "caf") {
+            self.playLocal(url: bundled, minSeconds: minSeconds)
+          }
+        }
+      }
+    }.resume()
+  }
+
+  private func scheduleAutoStop(after seconds: Int) {
+    stopTimer?.invalidate()
+    // Keep ringing until Flutter stops; long safety net only.
+    let safety = max(seconds, 300)
+    stopTimer = Timer.scheduledTimer(withTimeInterval: TimeInterval(safety), repeats: false) { [weak self] _ in
+      self?.stop()
     }
-    avPlayer.play()
-    remotePlayer = avPlayer
   }
 
   private func stopPlayersOnly() {
+    stopTimer?.invalidate()
+    stopTimer = nil
     player?.stop()
     player = nil
-    remotePlayer?.pause()
-    remotePlayer = nil
-    if let observer = remoteEndObserver {
-      NotificationCenter.default.removeObserver(observer)
-      remoteEndObserver = nil
-    }
   }
 }
