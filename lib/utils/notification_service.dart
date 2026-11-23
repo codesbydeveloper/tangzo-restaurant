@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -11,7 +12,8 @@ import 'package:restaurant/service/audio_player_service.dart';
 import 'package:restaurant/utils/fire_store_utils.dart';
 import 'package:restaurant/utils/preferences.dart';
 
-const String kOrderAlertChannelId = 'tangzo_order_alerts';
+/// Channel with bundled 20s order_bell (Android ignores sound changes on old channels).
+const String kOrderAlertChannelId = 'tangzo_order_alerts_20s';
 
 bool _isOrderRingtoneMessage(RemoteMessage message) {
   final type = (message.data['type']?.toString() ?? '').toLowerCase();
@@ -29,7 +31,9 @@ bool _isOrderRingtoneMessage(RemoteMessage message) {
 @pragma('vm:entry-point')
 Future<void> firebaseMessageBackgroundHandle(RemoteMessage message) async {
   log("BackGround Message :: ${message.messageId}");
-  // FCM already shows the system notification when a notification payload is present.
+  // When FCM includes a notification payload, iOS/Android already display it
+  // (iOS plays apns sound order_bell.caf). Only show a local notification for
+  // data-only messages so we do not break / duplicate system delivery.
   if (message.notification != null) return;
   try {
     if (Firebase.apps.isEmpty) {
@@ -44,25 +48,26 @@ Future<void> firebaseMessageBackgroundHandle(RemoteMessage message) async {
       ),
     );
     await _ensureOrderAlertChannel(plugin);
-    final title = message.notification?.title ?? message.data['title']?.toString() ?? 'Tangzo';
-    final body = message.notification?.body ?? message.data['body']?.toString() ?? 'New order update';
+    final title = message.data['title']?.toString() ?? 'Tangzo';
+    final body = message.data['body']?.toString() ?? 'New order update';
     await plugin.show(
       id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title: title,
       body: body,
-      notificationDetails: const NotificationDetails(
+      notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           kOrderAlertChannelId,
           'Tangzo Order Alerts',
-          channelDescription: 'High-priority order alerts with sound',
+          channelDescription: 'High-priority order alerts with 20s sound',
           importance: Importance.max,
           priority: Priority.max,
           playSound: true,
           enableVibration: true,
+          sound: const RawResourceAndroidNotificationSound('order_bell'),
           category: AndroidNotificationCategory.alarm,
           visibility: NotificationVisibility.public,
         ),
-        iOS: DarwinNotificationDetails(
+        iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
@@ -78,13 +83,14 @@ Future<void> firebaseMessageBackgroundHandle(RemoteMessage message) async {
 }
 
 Future<void> _ensureOrderAlertChannel(FlutterLocalNotificationsPlugin plugin) async {
-  const channel = AndroidNotificationChannel(
+  final channel = AndroidNotificationChannel(
     kOrderAlertChannelId,
     'Tangzo Order Alerts',
-    description: 'High-priority order alerts with sound',
+    description: 'High-priority order alerts with 20s sound',
     importance: Importance.max,
     playSound: true,
     enableVibration: true,
+    sound: const RawResourceAndroidNotificationSound('order_bell'),
   );
   await plugin
       .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
@@ -175,7 +181,29 @@ class NotificationService {
       }
     });
     log("::::::::::::Permission authorized:::::::::::::::::");
-    await FirebaseMessaging.instance.subscribeToTopic("restaurant");
+    await _subscribeRestaurantTopicSafely();
+  }
+
+  /// iOS throws [apns-token-not-set] if subscribe runs before APNS is ready.
+  Future<void> _subscribeRestaurantTopicSafely() async {
+    try {
+      if (Platform.isIOS) {
+        String? apns;
+        for (var i = 0; i < 10; i++) {
+          apns = await FirebaseMessaging.instance.getAPNSToken();
+          if (apns != null && apns.isNotEmpty) break;
+          await Future<void>.delayed(const Duration(milliseconds: 500));
+        }
+        if (apns == null || apns.isEmpty) {
+          log('APNS token not ready yet — skip topic subscribe for now');
+          return;
+        }
+      }
+      await FirebaseMessaging.instance.subscribeToTopic("restaurant");
+      log('Subscribed to topic restaurant');
+    } catch (e) {
+      log('subscribeToTopic(restaurant) failed: $e');
+    }
   }
 
   static Future<String?> getToken() async {
@@ -191,14 +219,15 @@ class NotificationService {
     log('Message data: ${message.notification!.body.toString()}');
     try {
       await _ensureOrderAlertChannel(flutterLocalNotificationsPlugin);
-      const AndroidNotificationDetails notificationDetails = AndroidNotificationDetails(
+      final AndroidNotificationDetails notificationDetails = AndroidNotificationDetails(
         kOrderAlertChannelId,
         'Tangzo Order Alerts',
-        channelDescription: 'High-priority order alerts with sound',
+        channelDescription: 'High-priority order alerts with 20s sound',
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
         enableVibration: true,
+        sound: const RawResourceAndroidNotificationSound('order_bell'),
         category: AndroidNotificationCategory.alarm,
         visibility: NotificationVisibility.public,
         ticker: 'ticker',
@@ -210,7 +239,7 @@ class NotificationService {
         sound: 'order_bell.caf',
         interruptionLevel: InterruptionLevel.timeSensitive,
       );
-      const NotificationDetails notificationDetailsBoth = NotificationDetails(
+      final NotificationDetails notificationDetailsBoth = NotificationDetails(
         android: notificationDetails,
         iOS: darwinNotificationDetails,
       );

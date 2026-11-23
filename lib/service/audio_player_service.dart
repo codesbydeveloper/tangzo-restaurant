@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:restaurant/utils/preferences.dart';
 
 class AudioPlayerService with WidgetsBindingObserver {
   static const MethodChannel _ringtoneChannel = MethodChannel('tangzo/order_ringtone');
@@ -20,14 +19,11 @@ class AudioPlayerService with WidgetsBindingObserver {
   static Future<void> playSound(bool isPlay) async {
     try {
       await initAudio();
-      final url = Preferences.getString(Preferences.orderRingtone);
       if (isPlay) {
         _isPlaying = true;
-        log("PlaySound :: START native ringtone");
+        log("PlaySound :: START native ringtone (bundled 20s)");
+        // Do not pass admin remote URL — it is often ~5s and was cutting the ring short.
         await _ringtoneChannel.invokeMethod('start', {
-          'url': url,
-          'title': 'New order',
-          'body': 'Incoming Tangzo order',
           'minSeconds': 20,
         });
       } else {
