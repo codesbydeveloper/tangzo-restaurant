@@ -1276,6 +1276,58 @@ class HomeScreen extends StatelessWidget {
                     const Icon(Icons.chevron_right)
                   ],
                 ),
+                if (orderModel.shiprocketPickupOtp != null) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: themeChange.getThem()
+                          ? AppThemeData.warning500.withOpacity(0.35)
+                          : AppThemeData.warning50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppThemeData.warning300),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.lock_outline, size: 20, color: AppThemeData.warning400),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              TranslatedText(
+                                "Pickup OTP",
+                                style: TextStyle(
+                                  color: themeChange.getThem() ? AppThemeData.grey200 : AppThemeData.grey700,
+                                  fontSize: 12,
+                                  fontFamily: AppThemeData.medium,
+                                ),
+                              ),
+                              Text(
+                                orderModel.shiprocketPickupOtp!,
+                                style: TextStyle(
+                                  color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                  fontSize: 22,
+                                  fontFamily: AppThemeData.semiBold,
+                                  letterSpacing: 4,
+                                ),
+                              ),
+                              TranslatedText(
+                                "Share this OTP with the Shiprocket rider at pickup",
+                                style: TextStyle(
+                                  color: themeChange.getThem() ? AppThemeData.grey300 : AppThemeData.grey600,
+                                  fontSize: 11,
+                                  fontFamily: AppThemeData.regular,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: MySeparator(color: themeChange.getThem() ? AppThemeData.grey700 : AppThemeData.grey200),
