@@ -1273,6 +1273,31 @@ class HomeScreen extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (orderModel.hasDeliveryPartnerToCall)
+                      InkWell(
+                        splashColor: Colors.transparent,
+                        onTap: () {
+                          Constant.makePhoneCall(orderModel.deliveryPartnerCallPhone ?? '');
+                        },
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          margin: const EdgeInsets.only(right: 6),
+                          decoration: ShapeDecoration(
+                            shape: RoundedRectangleBorder(
+                              side: BorderSide(
+                                width: 1,
+                                color: themeChange.getThem() ? AppThemeData.grey700 : AppThemeData.grey200,
+                              ),
+                              borderRadius: BorderRadius.circular(120),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(7.0),
+                            child: SvgPicture.asset("assets/icons/ic_phone_call.svg"),
+                          ),
+                        ),
+                      ),
                     const Icon(Icons.chevron_right)
                   ],
                 ),

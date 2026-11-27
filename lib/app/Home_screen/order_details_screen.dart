@@ -543,10 +543,27 @@ class OrderDetailsScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          if (controller.orderModel.value.takeAway != true &&
-                              controller.orderModel.value.isPosOrder == false &&
-                              (controller.orderModel.value.status == Constant.orderCompleted || controller.orderModel.value.status == Constant.orderInTransit))
-                            Column(
+                          Builder(builder: (context) {
+                            final order = controller.orderModel.value;
+                            final status = order.status;
+                            final showDriverCard = order.takeAway != true &&
+                                order.isPosOrder != true &&
+                                (order.hasDeliveryPartnerToCall || order.driver != null) &&
+                                (status == Constant.orderShipped ||
+                                    status == Constant.orderInTransit ||
+                                    status == Constant.orderCompleted ||
+                                    status == Constant.driverAccepted ||
+                                    status == Constant.driverPending ||
+                                    order.isShiprocketPartner);
+                            if (!showDriverCard) return const SizedBox.shrink();
+                            final callPhone = order.deliveryPartnerCallPhone ?? '';
+                            final subtitle = order.isShiprocketPartner
+                                ? (order.shiprocket?.currentStatus ??
+                                    order.shiprocket?.status ??
+                                    order.deliveryPartnerCallPhone ??
+                                    'Shiprocket')
+                                : (order.driver?.email ?? order.deliveryPartnerCallPhone ?? '');
+                            return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Padding(
@@ -562,87 +579,71 @@ class OrderDetailsScreen extends StatelessWidget {
                                     fontFamily: AppThemeData.semiBold,
                                   ),
                                 ),
-                                SizedBox(height: 12),
+                                const SizedBox(height: 12),
                                 Row(
                                   children: [
                                     ClipOval(
                                       child: NetworkImageWidget(
-                                        imageUrl: controller.orderModel.value.driver?.profilePictureURL ?? '',
+                                        imageUrl: order.driver?.profilePictureURL ?? '',
                                         width: 40,
                                         height: 40,
                                         fit: BoxFit.cover,
                                       ),
                                     ),
-                                    const SizedBox(
-                                      width: 8,
-                                    ),
+                                    const SizedBox(width: 8),
                                     Expanded(
-                                      child: Row(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Expanded(
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    TranslatedText(
-                                                      controller.orderModel.value.driver?.fullName() ?? '',
-                                                      style: TextStyle(
-                                                        color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                                                        fontSize: 14,
-                                                        fontFamily: AppThemeData.medium,
-                                                      ),
-                                                    ),
-                                                    TranslatedText(
-                                                      controller.orderModel.value.driver?.email ?? '',
-                                                      textAlign: TextAlign.center,
-                                                      style: TextStyle(
-                                                        color: themeChange.getThem() ? AppThemeData.grey400 : AppThemeData.grey500,
-                                                        fontSize: 12,
-                                                        fontFamily: AppThemeData.medium,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                Row(
-                                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                                  mainAxisAlignment: MainAxisAlignment.start,
-                                                  children: [],
-                                                ),
-                                              ],
+                                          TranslatedText(
+                                            order.deliveryPartnerDisplayName,
+                                            style: TextStyle(
+                                              color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                              fontSize: 14,
+                                              fontFamily: AppThemeData.medium,
                                             ),
                                           ),
-                                          InkWell(
-                                            splashColor: Colors.transparent,
-                                            onTap: () {
-                                              Constant.makePhoneCall(controller.orderModel.value.driver?.phoneNumber ?? '');
-                                            },
-                                            child: Container(
-                                              width: 42,
-                                              height: 42,
-                                              decoration: ShapeDecoration(
-                                                shape: RoundedRectangleBorder(
-                                                  side: BorderSide(width: 1, color: themeChange.getThem() ? AppThemeData.grey200 : AppThemeData.grey400),
-                                                  borderRadius: BorderRadius.circular(120),
-                                                ),
-                                              ),
-                                              child: Padding(
-                                                padding: const EdgeInsets.all(8.0),
-                                                child: SvgPicture.asset(
-                                                  "assets/icons/ic_phone_call.svg",
-                                                  color: themeChange.getThem() ? AppThemeData.grey200 : AppThemeData.grey400,
-                                                ),
-                                              ),
+                                          TranslatedText(
+                                            subtitle,
+                                            style: TextStyle(
+                                              color: themeChange.getThem() ? AppThemeData.grey400 : AppThemeData.grey500,
+                                              fontSize: 12,
+                                              fontFamily: AppThemeData.medium,
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
+                                    if (callPhone.isNotEmpty)
+                                      InkWell(
+                                        splashColor: Colors.transparent,
+                                        onTap: () => Constant.makePhoneCall(callPhone),
+                                        child: Container(
+                                          width: 42,
+                                          height: 42,
+                                          decoration: ShapeDecoration(
+                                            shape: RoundedRectangleBorder(
+                                              side: BorderSide(
+                                                width: 1,
+                                                color: themeChange.getThem() ? AppThemeData.grey200 : AppThemeData.grey400,
+                                              ),
+                                              borderRadius: BorderRadius.circular(120),
+                                            ),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: SvgPicture.asset(
+                                              "assets/icons/ic_phone_call.svg",
+                                              color: themeChange.getThem() ? AppThemeData.grey200 : AppThemeData.grey400,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ],
-                            ),
+                            );
+                          }),
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 20),
                             child: RoundedButtonFill(
